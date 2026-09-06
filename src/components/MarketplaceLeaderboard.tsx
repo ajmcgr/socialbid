@@ -88,8 +88,8 @@ function TrafficCounters() {
       rel="noopener noreferrer"
       className="font-mono text-xs font-bold text-primary hover:underline"
     >
-      Total visitors {traffic ? traffic.pageviews.toLocaleString() : "—"} · {traffic?.online ?? "—"}{" "}
-      live ↗
+      {traffic ? traffic.pageviews.toLocaleString() : "—"} total visitors ·{" "}
+      {traffic?.online ?? "—"} live ↗
     </a>
   );
 }
