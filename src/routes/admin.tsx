@@ -68,7 +68,7 @@ function Admin() {
 
     let active = true;
 
-    const useSession = async (accessToken: string | null) => {
+    const applySession = async (accessToken: string | null) => {
       if (!active) return;
       setToken(accessToken);
       if (!accessToken) {
@@ -80,20 +80,39 @@ function Admin() {
       await refresh(accessToken);
     };
 
-    void sb.auth.getSession().then(async ({ data: sessionData, error: sessionError }) => {
+    const {
+      data: { subscription },
+    } = sb.auth.onAuthStateChange((event, session) => {
+      // getSession below owns initial restoration. Ignoring INITIAL_SESSION
+      // prevents a stale empty startup event from replacing a valid session.
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        void applySession(session?.access_token ?? null);
+      } else if (event === "SIGNED_OUT") {
+        void applySession(null);
+      }
+    });
+
+    void (async () => {
+      const { data: sessionData, error: sessionError } = await sb.auth.getSession();
       if (!active) return;
       if (sessionError) {
         setError("Your sign-in session could not be restored. Please sign in again.");
         return;
       }
-      await useSession(sessionData.session?.access_token ?? null);
-    });
 
-    const {
-      data: { subscription },
-    } = sb.auth.onAuthStateChange((_event, session) => {
-      void useSession(session?.access_token ?? null);
-    });
+      let session = sessionData.session;
+      if (session?.expires_at && session.expires_at * 1000 <= Date.now() + 60_000) {
+        const { data: refreshedData, error: refreshError } = await sb.auth.refreshSession();
+        if (!active) return;
+        if (refreshError) {
+          setError("Your sign-in session expired. Please sign in again.");
+          return;
+        }
+        session = refreshedData.session;
+      }
+
+      await applySession(session?.access_token ?? null);
+    })();
 
     return () => {
       active = false;
