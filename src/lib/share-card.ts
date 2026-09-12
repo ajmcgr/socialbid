@@ -7,6 +7,7 @@ export type ShareCardData = {
   currentValueCents: number | null;
   globalRank: number | null;
   sponsorName: string | null;
+  sponsorLogoUrl: string | null;
 };
 
 export function shareCardProfileUrl(username: string): string {
@@ -38,7 +39,10 @@ export function highResolutionXAvatarUrl(url: string | null): string | null {
     const parsed = new URL(url);
     if (parsed.hostname !== "pbs.twimg.com") return url;
     parsed.pathname = parsed.pathname.replace(/_normal(?=\.[a-z0-9]+$)/i, "_400x400");
-    if (parsed.pathname.includes("/profile_images/") && !/_\d+x\d+\.[a-z0-9]+$/i.test(parsed.pathname)) {
+    if (
+      parsed.pathname.includes("/profile_images/") &&
+      !/_\d+x\d+\.[a-z0-9]+$/i.test(parsed.pathname)
+    ) {
       parsed.searchParams.set("name", "large");
     }
     return parsed.toString();
@@ -52,4 +56,8 @@ export function avatarProxyUrl(url: string | null): string | null {
   return highResolutionUrl
     ? `/api/public/share-avatar?src=${encodeURIComponent(highResolutionUrl)}`
     : null;
+}
+
+export function sponsorLogoProxyUrl(url: string | null): string | null {
+  return url ? `/api/public/share-avatar?kind=sponsor&src=${encodeURIComponent(url)}` : null;
 }

@@ -337,6 +337,7 @@ function CreatorPage() {
                   currentValueCents: session.bioValueCents,
                   globalRank: session.globalRank,
                   sponsorName: session.ownerName,
+                  sponsorLogoUrl: session.ownerLogoUrl,
                 }}
               />
             </section>

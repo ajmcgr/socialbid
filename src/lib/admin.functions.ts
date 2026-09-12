@@ -66,6 +66,7 @@ export const getAdminData = createServerFn({ method: "POST" })
       currentValueCents: row.bioValueCents,
       globalRank: row.globalRank,
       sponsorName: row.owner?.company_name ?? null,
+      sponsorLogoUrl: row.owner?.logo_url ?? null,
     }));
 
     const paid = (payments.data ?? []).filter(
