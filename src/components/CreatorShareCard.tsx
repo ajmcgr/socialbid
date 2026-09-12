@@ -307,13 +307,13 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   }
   context.restore();
 
-  // Name banner.
+  // Name banner: flat green strip.
   const bannerY = py + ph + 26;
-  const banner = context.createLinearGradient(px, 0, px + pw, 0);
-  banner.addColorStop(0, GREEN);
-  banner.addColorStop(1, MINT);
-  context.fillStyle = banner;
+  context.fillStyle = GREEN;
   context.fillRect(px, bannerY, pw, 96);
+  context.strokeStyle = INK;
+  context.lineWidth = 4;
+  context.strokeRect(px, bannerY, pw, 96);
   const name = data.displayName.toUpperCase();
   const nameSize = fitText(context, name, pw - 72, 64, DISPLAY, 800, 26);
   context.fillStyle = INK;
@@ -321,31 +321,22 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.font = `800 ${nameSize}px ${DISPLAY}`;
   context.fillText(ellipsize(context, name, pw - 72), SIZE / 2, bannerY + 50);
 
-  // Headline word.
+  // Headline word: solid ink.
   const headline = sponsored ? "SPONSORED" : "LISTED";
   const headlineY = bannerY + 96 + 92;
   const headlineSize = fitText(context, headline, pw - 40, 168, DISPLAY, 800, 60);
-  const metal = context.createLinearGradient(
-    0,
-    headlineY - headlineSize / 2,
-    0,
-    headlineY + headlineSize / 2,
-  );
-  metal.addColorStop(0, "#ffffff");
-  metal.addColorStop(0.5, "#e0f9e3");
-  metal.addColorStop(1, MINT);
   context.font = `800 ${headlineSize}px ${DISPLAY}`;
-  context.fillStyle = metal;
+  context.fillStyle = INK;
   context.fillText(headline, SIZE / 2, headlineY);
 
   // Footer strip: handle, value, domain.
   const footY = SIZE - pad - 52;
   context.font = `700 26px ${MONO}`;
-  context.fillStyle = MINT;
+  context.fillStyle = "rgba(5,6,10,0.65)";
   context.textAlign = "left";
   context.fillText(ellipsize(context, `@${data.handle ?? data.username}`, 420), px, footY);
   context.textAlign = "center";
-  context.fillStyle = PAPER;
+  context.fillStyle = INK;
   context.font = `800 34px ${DISPLAY}`;
   context.fillText(
     `${sponsored ? "VALUE" : "OPENING"} ${money(data.currentValueCents ?? data.startingPriceCents)}`,
@@ -353,9 +344,35 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
     footY,
   );
   context.textAlign = "right";
-  context.fillStyle = "rgba(255,255,255,0.6)";
+  context.fillStyle = "rgba(5,6,10,0.45)";
   context.font = `700 26px ${MONO}`;
   context.fillText("socialbid.co", px + pw, footY);
+  context.textAlign = "left";
+  context.textBaseline = "alphabetic";
+
+  // Global rank pill — drawn dead last so nothing can cover it.
+  const rankText = data.globalRank ? `#${data.globalRank}` : "—";
+  const rankLabel = "MOST VALUABLE";
+  context.font = `800 52px ${DISPLAY}`;
+  const rankNumWidth = context.measureText(rankText).width;
+  context.font = `700 18px ${MONO}`;
+  const rankLabelWidth = context.measureText(rankLabel).width;
+  const pillW = Math.max(rankNumWidth, rankLabelWidth) + 44;
+  const pillH = 86;
+  const pillX = px + pw - pillW - 20;
+  const pillY = py + 20;
+  context.fillStyle = GREEN;
+  context.fillRect(pillX, pillY, pillW, pillH);
+  context.strokeStyle = INK;
+  context.lineWidth = 4;
+  context.strokeRect(pillX, pillY, pillW, pillH);
+  context.fillStyle = INK;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = `800 52px ${DISPLAY}`;
+  context.fillText(rankText, pillX + pillW / 2, pillY + pillH / 2 - 10);
+  context.font = `700 18px ${MONO}`;
+  context.fillText(rankLabel, pillX + pillW / 2, pillY + pillH / 2 + 28);
   context.textAlign = "left";
   context.textBaseline = "alphabetic";
 }
