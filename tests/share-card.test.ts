@@ -6,7 +6,7 @@ import {
   shareCardProfileUrl,
   shareCardState,
   type ShareCardData,
-} from "./share-card";
+} from "../src/lib/share-card";
 
 const base: ShareCardData = {
   username: "alex_macgregor",
