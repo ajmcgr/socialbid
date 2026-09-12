@@ -210,19 +210,24 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.beginPath();
   context.rect(px, py, pw, ph);
   context.clip();
-  context.fillStyle = "#e8e6e1";
-  context.fillRect(px, py, pw, ph);
   const avatar = await loadAvatar(data.avatarUrl);
+  let portraitX = px;
+  let portraitY = py;
+  let portraitW = pw;
+  let portraitH = ph;
   if (avatar) {
-    const portraitW = ph * 0.86;
-    drawCoverImage(context, avatar, px + (pw - portraitW) / 2, py, portraitW, ph);
+    portraitW = ph * 0.86;
+    portraitX = px + (pw - portraitW) / 2;
+    drawCoverImage(context, avatar, portraitX, portraitY, portraitW, portraitH);
   } else {
+    context.fillStyle = "#e8e6e1";
+    context.fillRect(px, py, pw, ph);
     drawAvatarFallback(context, data, px, py, pw, ph);
   }
   context.restore();
   context.strokeStyle = INK;
   context.lineWidth = 4;
-  context.strokeRect(px, py, pw, ph);
+  context.strokeRect(portraitX, portraitY, portraitW, portraitH);
 
   // Sponsor badge floating over the portrait.
   const badgeW = 420;
@@ -301,11 +306,10 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.textAlign = "center";
   context.fillStyle = INK;
   context.font = `800 34px ${DISPLAY}`;
-  context.fillText(
-    `${sponsored ? "VALUE" : "OPENING"} ${money(data.currentValueCents ?? data.startingPriceCents)}`,
-    SIZE / 2,
-    footY,
+  const footAmount = money(
+    sponsored ? data.currentValueCents ?? data.startingPriceCents : data.startingPriceCents,
   );
+  context.fillText(sponsored ? footAmount : `OPENING ${footAmount}`, SIZE / 2, footY);
   context.textAlign = "right";
   context.fillStyle = "rgba(5,6,10,0.45)";
   context.font = `700 26px ${MONO}`;
