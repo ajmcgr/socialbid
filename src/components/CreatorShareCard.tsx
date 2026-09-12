@@ -343,11 +343,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
     context.fillStyle = INK;
     context.textAlign = "center";
     context.font = `800 ${nameSize}px ${DISPLAY}`;
-    context.fillText(
-      ellipsize(context, sponsorName, badgeW - 48),
-      SIZE / 2,
-      badgeY + logoH + 38,
-    );
+    context.fillText(ellipsize(context, sponsorName, badgeW - 48), SIZE / 2, badgeY + logoH + 38);
     context.textAlign = "left";
   } else {
     const label = sponsorName;
