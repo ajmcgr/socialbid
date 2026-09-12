@@ -353,6 +353,38 @@ function CreatorPage() {
             </section>
           ) : null}
 
+          {session.publiclyListed && session.startingPriceCents !== null ? (
+            <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+              <DialogContent className="max-w-md sm:max-w-xl">
+                <DialogHeader>
+                  <DialogTitle>Your profile is live!</DialogTitle>
+                  <DialogDescription>
+                    Share your announcement card to help sponsors find you on Social Bid.
+                  </DialogDescription>
+                </DialogHeader>
+                <CreatorShareCard
+                  compact
+                  data={{
+                    username: session.username,
+                    displayName: session.displayName,
+                    handle: session.handle,
+                    avatarUrl: session.profileImageUrl,
+                    startingPriceCents: session.startingPriceCents,
+                    currentValueCents: session.bioValueCents,
+                    globalRank: session.globalRank,
+                    sponsorName: session.ownerName,
+                    sponsorLogoUrl: session.ownerLogoUrl,
+                  }}
+                />
+                <div className="flex justify-end">
+                  <Button variant="outline" onClick={() => setShowShareDialog(false)}>
+                    Maybe later
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          ) : null}
+
           {session.ownerMessage ? (
             <div className="panel mt-8 p-6">
               <div className="label-xs">Sponsored on Social Bid</div>
