@@ -33,7 +33,7 @@ describe("creator share card helpers", () => {
 
   test("creates safe profile, filename, and avatar URLs", () => {
     expect(shareCardProfileUrl("alex name")).toBe("https://socialbid.co/u/alex%20name");
-    expect(shareCardFilename("Alex Name!")) .toBe("social-bid-alex-name.png");
+    expect(shareCardFilename("Alex Name!")).toBe("social-bid-alex-name.png");
     expect(avatarProxyUrl(base.avatarUrl)).toContain("/api/public/share-avatar?src=");
     expect(avatarProxyUrl(null)).toBeNull();
   });

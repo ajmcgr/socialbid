@@ -17,7 +17,12 @@ const PAPER = "#faf9f5";
 const BLUE = "#206dcb";
 const MUTED = "#aaa9a3";
 
-function fitText(context: CanvasRenderingContext2D, text: string, maxWidth: number, maxSize: number) {
+function fitText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  maxSize: number,
+) {
   let size = maxSize;
   while (size > 26) {
     context.font = `800 ${size}px Inter, Arial, sans-serif`;
@@ -30,7 +35,8 @@ function fitText(context: CanvasRenderingContext2D, text: string, maxWidth: numb
 function ellipsize(context: CanvasRenderingContext2D, text: string, maxWidth: number) {
   if (context.measureText(text).width <= maxWidth) return text;
   let value = text;
-  while (value.length > 1 && context.measureText(`${value}…`).width > maxWidth) value = value.slice(0, -1);
+  while (value.length > 1 && context.measureText(`${value}…`).width > maxWidth)
+    value = value.slice(0, -1);
   return `${value}…`;
 }
 
@@ -147,11 +153,20 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
 
 function canvasBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("PNG export failed"))), "image/png");
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("PNG export failed"))),
+      "image/png",
+    );
   });
 }
 
-export function CreatorShareCard({ data, compact = false }: { data: ShareCardData; compact?: boolean }) {
+export function CreatorShareCard({
+  data,
+  compact = false,
+}: {
+  data: ShareCardData;
+  compact?: boolean;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [copySupported, setCopySupported] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);

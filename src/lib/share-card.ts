@@ -14,7 +14,10 @@ export function shareCardProfileUrl(username: string): string {
 }
 
 export function shareCardFilename(username: string): string {
-  const safe = username.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+  const safe = username
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
   return `social-bid-${safe || "creator"}.png`;
 }
 
