@@ -374,8 +374,8 @@ export function MarketplaceLeaderboard({
     : [];
   const showSeparateUnowned = visibleUnowned.length > 0;
   const displayedUnowned =
-    showAllUnowned || visibleUnowned.length <= 8 ? visibleUnowned : visibleUnowned.slice(0, 8);
-  const canExpandUnowned = visibleUnowned.length > 8;
+    showAllUnowned || visibleUnowned.length <= 10 ? visibleUnowned : visibleUnowned.slice(0, 10);
+  const canExpandUnowned = visibleUnowned.length > 10;
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-5">
