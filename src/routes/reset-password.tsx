@@ -61,7 +61,6 @@ function ResetPassword() {
     return () => subscription.unsubscribe();
   }, []);
 
-
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const sb = getSupabase();
@@ -102,8 +101,7 @@ function ResetPassword() {
       ) : (
         <div className="panel mt-6 px-5 py-6">
           <p className="text-sm">
-            {msg ??
-              "This link is invalid or has expired. Request a new one from the sign-in page."}
+            {msg ?? "This link is invalid or has expired. Request a new one from the sign-in page."}
           </p>
           <a href="/auth" className="mt-3 inline-block text-sm underline">
             Back to sign in
