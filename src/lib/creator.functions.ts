@@ -23,6 +23,7 @@ export type CreatorSession = {
   bioValueCents: number | null;
   globalRank: number | null;
   ownerName: string | null;
+  ownerLogoUrl: string | null;
   ownerMessage: string | null;
   ownerUrl: string | null;
   /** Exact sponsored message shown on the creator's Social Bid profile. */
@@ -80,6 +81,7 @@ export const getCreatorSession = createServerFn({ method: "POST" })
     const listingStatus = marketRow?.listing.status ?? listing?.status ?? null;
 
     let ownerMessage: string | null = null;
+    let ownerLogoUrl: string | null = null;
     let ownerFormat: string | null = null;
     let ownerUrl: string | null = null;
     let activation: CreatorSession["activation"] = null;
@@ -87,7 +89,7 @@ export const getCreatorSession = createServerFn({ method: "POST" })
       const { data: ownership } = await db
         .from("ownerships")
         .select(
-          "bio_message, destination_url, placement_format, placement_status, activation_deadline, first_verified_at",
+          "bio_message, destination_url, logo_url, placement_format, placement_status, activation_deadline, first_verified_at",
         )
         .eq("status", "active")
         .eq("listing_id", listingId)
@@ -95,6 +97,7 @@ export const getCreatorSession = createServerFn({ method: "POST" })
       ownerMessage = (ownership?.bio_message as string | null) ?? null;
       ownerFormat = (ownership?.placement_format as string | null) ?? null;
       ownerUrl = (ownership?.destination_url as string | null) ?? null;
+      ownerLogoUrl = (ownership?.logo_url as string | null) ?? null;
       if (ownership) {
         activation = {
           status: String(ownership.placement_status ?? "active"),
@@ -126,6 +129,7 @@ export const getCreatorSession = createServerFn({ method: "POST" })
       bioValueCents: marketRow?.bioValueCents ?? null,
       globalRank: marketRow?.globalRank ?? null,
       ownerName: marketRow?.owner?.company_name ?? null,
+      ownerLogoUrl: marketRow?.owner?.logo_url ?? ownerLogoUrl,
       ownerMessage,
       ownerUrl,
       ownerPlacement: ownerMessage

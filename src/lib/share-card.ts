@@ -7,6 +7,7 @@ export type ShareCardData = {
   currentValueCents: number | null;
   globalRank: number | null;
   sponsorName: string | null;
+  sponsorLogoUrl: string | null;
 };
 
 export function shareCardProfileUrl(username: string): string {
@@ -52,4 +53,8 @@ export function avatarProxyUrl(url: string | null): string | null {
   return highResolutionUrl
     ? `/api/public/share-avatar?src=${encodeURIComponent(highResolutionUrl)}`
     : null;
+}
+
+export function sponsorLogoProxyUrl(url: string | null): string | null {
+  return url ? `/api/public/share-avatar?kind=sponsor&src=${encodeURIComponent(url)}` : null;
 }

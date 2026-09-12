@@ -9,6 +9,7 @@ import {
   shareCardPostText,
   shareCardProfileUrl,
   shareCardState,
+  sponsorLogoProxyUrl,
   type ShareCardData,
 } from "@/lib/share-card";
 
@@ -17,6 +18,7 @@ const INK = "#11110f";
 const PAPER = "#faf9f5";
 const BLUE = "#206dcb";
 const MUTED = "#aaa9a3";
+const SKY = "#42b5ff";
 
 function fitText(
   context: CanvasRenderingContext2D,
@@ -69,6 +71,57 @@ async function loadAvatar(url: string | null): Promise<HTMLImageElement | null> 
   return null;
 }
 
+async function loadSponsorLogo(url: string | null): Promise<HTMLImageElement | null> {
+  const sources = [sponsorLogoProxyUrl(url), url].filter(
+    (source, index, values): source is string => Boolean(source) && values.indexOf(source) === index,
+  );
+  for (const source of sources) {
+    try {
+      return await loadImage(source);
+    } catch {
+      // The designed unsponsored/sponsor-name mark remains available as a fallback.
+    }
+  }
+  return null;
+}
+
+function drawCoverImage(
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+  const drawnWidth = image.naturalWidth * scale;
+  const drawnHeight = image.naturalHeight * scale;
+  context.drawImage(
+    image,
+    x + (width - drawnWidth) / 2,
+    y + (height - drawnHeight) / 2,
+    drawnWidth,
+    drawnHeight,
+  );
+}
+
+function drawOpenMarketMark(context: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  const gradient = context.createLinearGradient(x, y, x + size, y + size);
+  gradient.addColorStop(0, BLUE);
+  gradient.addColorStop(1, SKY);
+  context.fillStyle = gradient;
+  context.fillRect(x, y, size, size);
+  context.strokeStyle = PAPER;
+  context.lineWidth = 8;
+  context.beginPath();
+  context.arc(x + size / 2, y + size / 2, size * 0.27, 0, Math.PI * 2);
+  context.stroke();
+  context.beginPath();
+  context.arc(x + size / 2, y + size / 2, size * 0.08, 0, Math.PI * 2);
+  context.fillStyle = PAPER;
+  context.fill();
+}
+
 function drawAvatarFallback(context: CanvasRenderingContext2D, data: ShareCardData) {
   context.fillStyle = BLUE;
   context.fillRect(72, 286, 590, 590);
@@ -85,84 +138,118 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const context = canvas.getContext("2d");
   if (!context) return;
   context.clearRect(0, 0, SIZE, SIZE);
-  context.fillStyle = PAPER;
-  context.fillRect(0, 0, SIZE, SIZE);
   context.fillStyle = INK;
-  context.fillRect(0, 0, SIZE, 222);
-  context.fillRect(0, 920, SIZE, 280);
-  context.fillStyle = BLUE;
-  context.fillRect(0, 214, SIZE, 8);
-
-  context.fillStyle = PAPER;
-  context.font = "800 86px Inter, Arial, sans-serif";
-  context.fillText("SOCIAL BID", 72, 112);
-  context.font = "700 27px 'Courier New', monospace";
+  context.fillRect(0, 0, SIZE, SIZE);
   const sponsored = shareCardState(data) === "sponsored";
-  context.fillText(sponsored ? "SPONSORSHIP ANNOUNCEMENT" : "MARKET ENTRY", 76, 171);
-  context.textAlign = "right";
-  context.fillStyle = MUTED;
-  context.fillText(data.globalRank ? `GLOBAL RANK #${data.globalRank}` : "OPEN MARKET", 1128, 171);
-  context.textAlign = "left";
 
   const avatar = await loadAvatar(data.avatarUrl);
   if (avatar) {
-    const scale = Math.max(590 / avatar.naturalWidth, 590 / avatar.naturalHeight);
-    const width = avatar.naturalWidth * scale;
-    const height = avatar.naturalHeight * scale;
     context.save();
-    context.beginPath();
-    context.rect(72, 286, 590, 590);
-    context.clip();
-    context.drawImage(avatar, 72 + (590 - width) / 2, 286 + (590 - height) / 2, width, height);
+    context.filter = "saturate(0.88) contrast(1.08)";
+    drawCoverImage(context, avatar, 0, 0, SIZE, 870);
     context.restore();
   } else {
+    const gradient = context.createLinearGradient(0, 0, SIZE, 870);
+    gradient.addColorStop(0, BLUE);
+    gradient.addColorStop(1, INK);
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, SIZE, 870);
+    context.save();
+    context.translate(230, 145);
     drawAvatarFallback(context, data);
+    context.restore();
   }
-  context.strokeStyle = INK;
-  context.lineWidth = 10;
-  context.strokeRect(72, 286, 590, 590);
 
-  const textX = 714;
-  const textWidth = 414;
-  context.fillStyle = BLUE;
-  const handle = `@${data.handle ?? data.username}`;
-  context.font = `700 ${fitText(context, handle, textWidth, 34)}px 'Courier New', monospace`;
-  context.fillText(ellipsize(context, handle, textWidth), textX, 342);
-  context.fillStyle = INK;
-  const nameSize = fitText(context, data.displayName.toUpperCase(), textWidth, 68);
-  context.font = `800 ${nameSize}px Inter, Arial, sans-serif`;
-  const name = ellipsize(context, data.displayName.toUpperCase(), textWidth);
-  context.fillText(name, textX, 428);
-  context.fillRect(textX, 468, textWidth, 7);
+  const portraitShade = context.createLinearGradient(0, 250, 0, 870);
+  portraitShade.addColorStop(0, "rgba(8,9,11,0)");
+  portraitShade.addColorStop(0.56, "rgba(8,9,11,0.18)");
+  portraitShade.addColorStop(1, "rgba(8,9,11,0.94)");
+  context.fillStyle = portraitShade;
+  context.fillRect(0, 0, SIZE, 870);
 
-  context.font = "800 60px Inter, Arial, sans-serif";
-  context.fillText(sponsored ? "SPONSORED" : "ENTERED", textX, 584);
-  context.fillText(sponsored ? "ON SOCIAL BID" : "THE MARKET", textX, 654);
-  context.fillStyle = BLUE;
-  context.fillRect(textX, 707, 86, 12);
-  context.fillStyle = INK;
-  context.font = "700 25px 'Courier New', monospace";
-  context.fillText("SOCIALBID.CO", textX, 784);
-  context.fillText(`/U/${data.username.toUpperCase()}`, textX, 824);
+  const blueGlow = context.createLinearGradient(0, 0, SIZE, 0);
+  blueGlow.addColorStop(0, BLUE);
+  blueGlow.addColorStop(0.55, SKY);
+  blueGlow.addColorStop(1, BLUE);
+  context.fillStyle = blueGlow;
+  context.fillRect(0, 0, SIZE, 14);
+  context.fillRect(0, 856, SIZE, 14);
 
   context.fillStyle = PAPER;
-  context.font = "700 26px 'Courier New', monospace";
-  context.fillText(sponsored ? "CURRENT VALUE" : "OPENING BID", 72, 984);
-  context.font = "800 88px Inter, Arial, sans-serif";
-  context.fillText(money(data.currentValueCents ?? data.startingPriceCents), 72, 1076);
-  if (sponsored && data.sponsorName) {
-    context.textAlign = "right";
-    context.font = "700 25px 'Courier New', monospace";
-    context.fillStyle = MUTED;
-    context.fillText("SPONSORED BY", 1128, 984);
+  context.fillRect(54, 52, 302, 68);
+  context.fillStyle = INK;
+  context.font = "800 38px Arial Black, Inter, sans-serif";
+  context.fillText("SOCIAL BID", 76, 99);
+  context.textAlign = "right";
+  context.fillStyle = PAPER;
+  context.font = "700 24px 'Courier New', monospace";
+  context.fillText(data.globalRank ? `GLOBAL RANK #${data.globalRank}` : "OPEN MARKET", 1146, 93);
+  context.textAlign = "left";
+
+  const handle = `@${data.handle ?? data.username}`;
+  context.fillStyle = SKY;
+  context.font = `700 ${fitText(context, handle, 980, 34)}px 'Courier New', monospace`;
+  context.fillText(ellipsize(context, handle, 980), 58, 622);
+  context.fillStyle = PAPER;
+  const nameSize = fitText(context, data.displayName.toUpperCase(), 1084, 82);
+  context.font = `800 ${nameSize}px Arial Black, Inter, sans-serif`;
+  context.fillText(ellipsize(context, data.displayName.toUpperCase(), 1084), 54, 714);
+  context.font = "800 76px Arial Black, Inter, sans-serif";
+  context.fillText(sponsored ? "SPONSORED" : "NOW LISTED", 54, 808);
+
+  context.fillStyle = INK;
+  context.fillRect(0, 870, SIZE, 330);
+  context.fillStyle = PAPER;
+  context.font = "700 22px 'Courier New', monospace";
+  context.fillText(sponsored ? "CURRENT VALUE" : "OPENING BID", 54, 930);
+  context.font = "800 76px Arial Black, Inter, sans-serif";
+  context.fillText(money(data.currentValueCents ?? data.startingPriceCents), 54, 1010);
+
+  const sponsorLogo = sponsored ? await loadSponsorLogo(data.sponsorLogoUrl) : null;
+  const logoX = 812;
+  const logoY = 902;
+  const logoSize = 150;
+  context.save();
+  context.beginPath();
+  context.rect(logoX, logoY, logoSize, logoSize);
+  context.clip();
+  if (sponsorLogo) {
     context.fillStyle = PAPER;
-    const sponsorSize = fitText(context, data.sponsorName.toUpperCase(), 480, 48);
-    context.font = `800 ${sponsorSize}px Inter, Arial, sans-serif`;
-    context.fillText(ellipsize(context, data.sponsorName.toUpperCase(), 480), 1128, 1051);
-    context.textAlign = "left";
+    context.fillRect(logoX, logoY, logoSize, logoSize);
+    drawCoverImage(context, sponsorLogo, logoX, logoY, logoSize, logoSize);
+  } else if (sponsored) {
+    const gradient = context.createLinearGradient(logoX, logoY, logoX + logoSize, logoY + logoSize);
+    gradient.addColorStop(0, BLUE);
+    gradient.addColorStop(1, SKY);
+    context.fillStyle = gradient;
+    context.fillRect(logoX, logoY, logoSize, logoSize);
+    context.fillStyle = PAPER;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.font = "800 68px Arial Black, Inter, sans-serif";
+    context.fillText(data.sponsorName?.trim().slice(0, 1).toUpperCase() || "S", logoX + 75, logoY + 78);
+  } else {
+    drawOpenMarketMark(context, logoX, logoY, logoSize);
   }
-  context.fillStyle = BLUE;
-  context.fillRect(72, 1137, 1056, 10);
+  context.restore();
+  context.strokeStyle = PAPER;
+  context.lineWidth = 4;
+  context.strokeRect(logoX, logoY, logoSize, logoSize);
+
+  context.textAlign = "right";
+  context.textBaseline = "alphabetic";
+  context.fillStyle = MUTED;
+  context.font = "700 20px 'Courier New', monospace";
+  context.fillText(sponsored ? "SPONSORED BY" : "SPONSOR STATUS", 1146, 930);
+  context.fillStyle = PAPER;
+  const sponsorLabel = sponsored ? (data.sponsorName ?? "CURRENT SPONSOR") : "UNSPONSORED";
+  const sponsorSize = fitText(context, sponsorLabel.toUpperCase(), 350, 42);
+  context.font = `800 ${sponsorSize}px Arial Black, Inter, sans-serif`;
+  context.fillText(ellipsize(context, sponsorLabel.toUpperCase(), 350), 1146, 1100);
+  context.textAlign = "left";
+
+  context.fillStyle = blueGlow;
+  context.fillRect(54, 1160, 1092, 8);
 }
 
 function canvasBlob(canvas: HTMLCanvasElement): Promise<Blob> {

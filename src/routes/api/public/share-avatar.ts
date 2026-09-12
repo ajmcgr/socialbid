@@ -2,11 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const ALLOWED_HOSTS = new Set(["pbs.twimg.com", "abs.twimg.com"]);
 
+function isAllowedHost(url: URL, kind: string | null) {
+  if (ALLOWED_HOSTS.has(url.hostname)) return true;
+  return kind === "sponsor" && url.hostname.endsWith(".supabase.co");
+}
+
 export const Route = createFileRoute("/api/public/share-avatar")({
   server: {
     handlers: {
       GET: async ({ request }) => {
         const src = new URL(request.url).searchParams.get("src");
+        const kind = new URL(request.url).searchParams.get("kind");
         if (!src) return new Response("Not found", { status: 404 });
 
         let imageUrl: URL;
@@ -15,7 +21,7 @@ export const Route = createFileRoute("/api/public/share-avatar")({
         } catch {
           return new Response("Invalid image URL", { status: 400 });
         }
-        if (imageUrl.protocol !== "https:" || !ALLOWED_HOSTS.has(imageUrl.hostname)) {
+        if (imageUrl.protocol !== "https:" || !isAllowedHost(imageUrl, kind)) {
           return new Response("Image host not allowed", { status: 403 });
         }
 
@@ -29,7 +35,7 @@ export const Route = createFileRoute("/api/public/share-avatar")({
         } catch {
           return new Response("Image unavailable", { status: 404 });
         }
-        if (finalUrl.protocol !== "https:" || !ALLOWED_HOSTS.has(finalUrl.hostname)) {
+        if (finalUrl.protocol !== "https:" || !isAllowedHost(finalUrl, kind)) {
           return new Response("Image redirect not allowed", { status: 403 });
         }
         const contentType = upstream.headers.get("content-type") ?? "";
