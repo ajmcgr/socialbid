@@ -65,6 +65,7 @@ function CreatorPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [payouts, setPayouts] = useState<PayoutStatus | null>(null);
   const [notificationEmail, setNotificationEmail] = useState("");
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   const loadPayouts = useCallback(() => {
     void getPayoutStatus({ data: {} })
