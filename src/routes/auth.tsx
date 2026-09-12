@@ -61,7 +61,9 @@ function Auth() {
 
   return (
     <div className="mx-auto max-w-md px-5 py-20">
-      <h1 className="text-3xl font-extrabold">{mode === "in" ? "Sign in" : "Create account"}</h1>
+      <h1 className="text-3xl font-extrabold">
+        {mode === "in" ? "Sign in" : mode === "up" ? "Create account" : "Set your password"}
+      </h1>
       <form onSubmit={submit} className="panel mt-6 space-y-4 px-5 py-6">
         <div>
           <label className="label-xs" htmlFor="email">
@@ -69,30 +71,48 @@ function Auth() {
           </label>
           <input id="email" name="email" type="email" required className="field mt-1" />
         </div>
-        <div>
-          <label className="label-xs" htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            className="field mt-1"
-          />
-        </div>
-        {msg && <p className="text-sm font-medium text-destructive">{msg}</p>}
+        {mode !== "reset" && (
+          <div>
+            <label className="label-xs" htmlFor="password">
+              Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              minLength={8}
+              className="field mt-1"
+            />
+          </div>
+        )}
+        {msg && (
+          <p
+            className={`text-sm font-medium ${msg.startsWith("Check your email") ? "" : "text-destructive"}`}
+          >
+            {msg}
+          </p>
+        )}
         <button disabled={busy} className="btn-ink btn-ink-hover w-full disabled:opacity-40">
-          {busy ? "…" : mode === "in" ? "Sign in" : "Sign up"}
+          {busy
+            ? "…"
+            : mode === "in"
+              ? "Sign in"
+              : mode === "up"
+                ? "Sign up"
+                : "Email me a password link"}
         </button>
       </form>
-      <button
-        onClick={() => setMode(mode === "in" ? "up" : "in")}
-        className="mt-4 text-sm underline"
-      >
-        {mode === "in" ? "Need an account?" : "Already have an account?"}
-      </button>
+      <div className="mt-4 flex gap-4 text-sm">
+        <button onClick={() => setMode(mode === "in" ? "up" : "in")} className="underline">
+          {mode === "in" ? "Need an account?" : "Already have an account?"}
+        </button>
+        {mode === "in" && (
+          <button onClick={() => setMode("reset")} className="underline">
+            Never set a password?
+          </button>
+        )}
+      </div>
     </div>
   );
 }
