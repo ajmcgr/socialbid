@@ -93,7 +93,10 @@ function CreatorPage() {
     const err = params.get("error");
     if (err) setMessage(errorCopy(err));
     const connected = params.get("connected");
-    if (connected && !err) setMessage(`X connected — @${connected}`);
+    if (connected && !err) {
+      setMessage(`X connected — @${connected}`);
+      void trackEvent({ data: { name: "x_auth_completed" } }).catch(() => undefined);
+    }
     const stripeReturn = params.get("stripe");
     if (connected || stripeReturn) {
       window.history.replaceState({}, "", "/creator");
