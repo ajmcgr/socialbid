@@ -19,7 +19,7 @@ function emptyMarketplace(sort: MarketplaceSort): MarketplaceSnapshot {
 
 export const getMarketplace = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) =>
-    z.object({ sort: sortSchema.default("trending") }).parse(input),
+    z.object({ sort: sortSchema.default("most-valuable") }).parse(input),
   )
   .handler(async ({ data }): Promise<MarketplaceSnapshot> => {
     const sort = data.sort as MarketplaceSort;

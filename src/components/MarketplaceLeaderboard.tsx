@@ -17,8 +17,8 @@ import { XIcon } from "./XIcon";
 import { CreatorAvatar } from "./CreatorAvatar";
 
 const sorts: Array<{ value: MarketplaceSort; label: string }> = [
-  { value: "trending", label: "Trending" },
   { value: "most-valuable", label: "Most valuable" },
+  { value: "trending", label: "Trending" },
   { value: "new", label: "New" },
   { value: "affordable", label: "Affordable" },
 ];
@@ -27,7 +27,7 @@ const RANKINGS_PAGE_SIZE = 50;
 
 function rankingsPageHref(sort: MarketplaceSort, page: number) {
   const params = new URLSearchParams();
-  if (sort !== "trending") params.set("sort", sort);
+  if (sort !== "most-valuable") params.set("sort", sort);
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
   return query ? `/?${query}` : "/";
