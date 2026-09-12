@@ -16,11 +16,8 @@ import {
 const SIZE = 1200;
 const INK = "#05060a";
 const PAPER = "#ffffff";
+const PAPER_BG = "#fbfaf8";
 const GREEN = "#67eb72";
-const MINT = "#a3f7a8";
-const DEEP = "#05140a";
-const FOREST = "#0d3d1f";
-const MOSS = "#0a2a16";
 
 const DISPLAY = "Arial Black, Inter, sans-serif";
 const MONO = "'Courier New', monospace";
@@ -95,21 +92,6 @@ async function loadSponsorLogo(url: string | null): Promise<HTMLImageElement | n
   return null;
 }
 
-/** The stored brand mark is black artwork, so recolour it for dark backgrounds. */
-function tintedLogo(image: HTMLImageElement, colour: string, width: number) {
-  const height = Math.round((image.naturalHeight / image.naturalWidth) * width);
-  const buffer = document.createElement("canvas");
-  buffer.width = width;
-  buffer.height = height;
-  const paint = buffer.getContext("2d");
-  if (!paint) return null;
-  paint.drawImage(image, 0, 0, width, height);
-  paint.globalCompositeOperation = "source-in";
-  paint.fillStyle = colour;
-  paint.fillRect(0, 0, width, height);
-  return { canvas: buffer, width, height };
-}
-
 function drawCoverImage(
   context: CanvasRenderingContext2D,
   image: HTMLImageElement,
@@ -152,28 +134,6 @@ function drawContainImage(
   );
 }
 
-/** Halftone dot field behind the portrait — keeps the frame alive without clutter. */
-function drawDotField(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-) {
-  const step = 26;
-  for (let row = 0; row * step < height; row += 1) {
-    for (let column = 0; column * step < width; column += 1) {
-      const cx = x + column * step + step / 2;
-      const cy = y + row * step + step / 2;
-      const fade = 1 - Math.min(1, Math.abs(cx - (x + width / 2)) / (width / 1.5));
-      context.fillStyle = `rgba(103,235,114,${0.1 + fade * 0.3})`;
-      context.beginPath();
-      context.arc(cx, cy, 4.5, 0, Math.PI * 2);
-      context.fill();
-    }
-  }
-}
-
 function drawAvatarFallback(
   context: CanvasRenderingContext2D,
   data: ShareCardData,
@@ -183,7 +143,7 @@ function drawAvatarFallback(
   height: number,
 ) {
   context.save();
-  context.fillStyle = PAPER;
+  context.fillStyle = INK;
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.font = `800 320px ${DISPLAY}`;
@@ -201,48 +161,38 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const sponsored = shareCardState(data) === "sponsored";
   context.clearRect(0, 0, SIZE, SIZE);
 
-  // Background: deep green field with soft scanlines.
-  const backdrop = context.createLinearGradient(0, 0, SIZE, SIZE);
-  backdrop.addColorStop(0, DEEP);
-  backdrop.addColorStop(0.5, FOREST);
-  backdrop.addColorStop(1, DEEP);
-  context.fillStyle = backdrop;
+  // Flat paper background, no gradients.
+  context.fillStyle = PAPER_BG;
   context.fillRect(0, 0, SIZE, SIZE);
-  context.fillStyle = "rgba(0,0,0,0.22)";
-  for (let y = 0; y < SIZE; y += 6) context.fillRect(0, y, SIZE, 3);
 
-  // Inner card.
+  // Inner card frame.
   const pad = 44;
   const cardW = SIZE - pad * 2;
-  context.fillStyle = INK;
-  context.fillRect(pad, pad, cardW, SIZE - pad * 2);
-  context.strokeStyle = "rgba(103,235,114,0.55)";
-  context.lineWidth = 3;
-  context.strokeRect(pad + 1.5, pad + 1.5, cardW - 3, SIZE - pad * 2 - 3);
+  context.strokeStyle = INK;
+  context.lineWidth = 4;
+  context.strokeRect(pad, pad, cardW, SIZE - pad * 2);
 
   // Header: status kicker + brand mark.
-  context.fillStyle = MINT;
+  context.fillStyle = INK;
   context.textBaseline = "middle";
   context.font = `800 40px ${DISPLAY}`;
   context.fillText(sponsored ? "SPONSORSHIP NEWS" : "MARKET ENTRY", pad + 44, pad + 62);
 
   try {
     const brand = await loadImage("/social-bid-logo.png");
-    const tinted = tintedLogo(brand, PAPER, 300);
-    if (tinted)
-      drawContainImage(
-        context,
-        tinted.canvas,
-        tinted.width,
-        tinted.height,
-        SIZE - pad - 44 - 300,
-        pad + 62 - 36,
-        300,
-        72,
-      );
+    drawContainImage(
+      context,
+      brand,
+      brand.naturalWidth,
+      brand.naturalHeight,
+      SIZE - pad - 44 - 300,
+      pad + 62 - 36,
+      300,
+      72,
+    );
   } catch {
     context.textAlign = "right";
-    context.fillStyle = PAPER;
+    context.fillStyle = INK;
     context.font = `800 40px ${DISPLAY}`;
     context.fillText("SOCIAL BID", SIZE - pad - 44, pad + 62);
     context.textAlign = "left";
@@ -257,12 +207,8 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.beginPath();
   context.rect(px, py, pw, ph);
   context.clip();
-  const panel = context.createLinearGradient(px, py, px, py + ph);
-  panel.addColorStop(0, FOREST);
-  panel.addColorStop(1, MOSS);
-  context.fillStyle = panel;
+  context.fillStyle = "#e8e6e1";
   context.fillRect(px, py, pw, ph);
-  drawDotField(context, px, py, pw, ph);
   const avatar = await loadAvatar(data.avatarUrl);
   if (avatar) {
     const portraitW = ph * 0.86;
@@ -270,53 +216,18 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   } else {
     drawAvatarFallback(context, data, px, py, pw, ph);
   }
-  const shade = context.createLinearGradient(0, py + ph * 0.55, 0, py + ph);
-  shade.addColorStop(0, "rgba(5,6,10,0)");
-  shade.addColorStop(1, "rgba(5,6,10,0.9)");
-  context.fillStyle = shade;
-  context.fillRect(px, py, pw, ph);
   context.restore();
-  context.strokeStyle = "rgba(103,235,114,0.5)";
-  context.lineWidth = 3;
-  context.strokeRect(px + 1.5, py + 1.5, pw - 3, ph - 3);
-
-  // Global rank pill — drawn last so the portrait never covers it.
-  const rankText = data.globalRank ? `#${data.globalRank}` : "—";
-  const rankLabel = "MOST VALUABLE";
-  context.font = `800 52px ${DISPLAY}`;
-  const rankNumWidth = context.measureText(rankText).width;
-  context.font = `700 18px ${MONO}`;
-  const rankLabelWidth = context.measureText(rankLabel).width;
-  const pillW = Math.max(rankNumWidth, rankLabelWidth) + 44;
-  const pillH = 86;
-  const pillX = px + pw - pillW - 20;
-  const pillY = py + 20;
-  context.fillStyle = GREEN;
-  context.fillRect(pillX, pillY, pillW, pillH);
   context.strokeStyle = INK;
-  context.lineWidth = 3;
-  context.strokeRect(pillX + 1.5, pillY + 1.5, pillW - 3, pillH - 3);
-  context.fillStyle = INK;
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  context.font = `800 52px ${DISPLAY}`;
-  context.fillText(rankText, pillX + pillW / 2, pillY + pillH / 2 - 10);
-  context.font = `700 18px ${MONO}`;
-  context.fillText(rankLabel, pillX + pillW / 2, pillY + pillH / 2 + 28);
-  context.textAlign = "left";
-  context.textBaseline = "alphabetic";
+  context.lineWidth = 4;
+  context.strokeRect(px, py, pw, ph);
 
   // Sponsor badge floating over the portrait.
   const badgeW = 420;
   const badgeH = 152;
   const badgeX = SIZE / 2 - badgeW / 2;
   const badgeY = py + ph - badgeH - 34;
-  context.save();
-  context.shadowColor = "rgba(103,235,114,0.75)";
-  context.shadowBlur = 40;
   context.fillStyle = PAPER;
   context.fillRect(badgeX, badgeY, badgeW, badgeH);
-  context.restore();
   context.strokeStyle = INK;
   context.lineWidth = 4;
   context.strokeRect(badgeX, badgeY, badgeW, badgeH);
@@ -356,13 +267,13 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   }
   context.restore();
 
-  // Name banner.
+  // Name banner: flat green strip.
   const bannerY = py + ph + 26;
-  const banner = context.createLinearGradient(px, 0, px + pw, 0);
-  banner.addColorStop(0, GREEN);
-  banner.addColorStop(1, MINT);
-  context.fillStyle = banner;
+  context.fillStyle = GREEN;
   context.fillRect(px, bannerY, pw, 96);
+  context.strokeStyle = INK;
+  context.lineWidth = 4;
+  context.strokeRect(px, bannerY, pw, 96);
   const name = data.displayName.toUpperCase();
   const nameSize = fitText(context, name, pw - 72, 64, DISPLAY, 800, 26);
   context.fillStyle = INK;
@@ -370,31 +281,22 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.font = `800 ${nameSize}px ${DISPLAY}`;
   context.fillText(ellipsize(context, name, pw - 72), SIZE / 2, bannerY + 50);
 
-  // Headline word.
+  // Headline word: solid ink.
   const headline = sponsored ? "SPONSORED" : "LISTED";
   const headlineY = bannerY + 96 + 92;
   const headlineSize = fitText(context, headline, pw - 40, 168, DISPLAY, 800, 60);
-  const metal = context.createLinearGradient(
-    0,
-    headlineY - headlineSize / 2,
-    0,
-    headlineY + headlineSize / 2,
-  );
-  metal.addColorStop(0, "#ffffff");
-  metal.addColorStop(0.5, "#e0f9e3");
-  metal.addColorStop(1, MINT);
   context.font = `800 ${headlineSize}px ${DISPLAY}`;
-  context.fillStyle = metal;
+  context.fillStyle = INK;
   context.fillText(headline, SIZE / 2, headlineY);
 
   // Footer strip: handle, value, domain.
   const footY = SIZE - pad - 52;
   context.font = `700 26px ${MONO}`;
-  context.fillStyle = MINT;
+  context.fillStyle = "rgba(5,6,10,0.65)";
   context.textAlign = "left";
   context.fillText(ellipsize(context, `@${data.handle ?? data.username}`, 420), px, footY);
   context.textAlign = "center";
-  context.fillStyle = PAPER;
+  context.fillStyle = INK;
   context.font = `800 34px ${DISPLAY}`;
   context.fillText(
     `${sponsored ? "VALUE" : "OPENING"} ${money(data.currentValueCents ?? data.startingPriceCents)}`,
@@ -402,9 +304,35 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
     footY,
   );
   context.textAlign = "right";
-  context.fillStyle = "rgba(255,255,255,0.6)";
+  context.fillStyle = "rgba(5,6,10,0.45)";
   context.font = `700 26px ${MONO}`;
   context.fillText("socialbid.co", px + pw, footY);
+  context.textAlign = "left";
+  context.textBaseline = "alphabetic";
+
+  // Global rank pill — drawn dead last so nothing can cover it.
+  const rankText = data.globalRank ? `#${data.globalRank}` : "—";
+  const rankLabel = "MOST VALUABLE";
+  context.font = `800 52px ${DISPLAY}`;
+  const rankNumWidth = context.measureText(rankText).width;
+  context.font = `700 18px ${MONO}`;
+  const rankLabelWidth = context.measureText(rankLabel).width;
+  const pillW = Math.max(rankNumWidth, rankLabelWidth) + 44;
+  const pillH = 86;
+  const pillX = px + pw - pillW - 20;
+  const pillY = py + 20;
+  context.fillStyle = GREEN;
+  context.fillRect(pillX, pillY, pillW, pillH);
+  context.strokeStyle = INK;
+  context.lineWidth = 4;
+  context.strokeRect(pillX, pillY, pillW, pillH);
+  context.fillStyle = INK;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = `800 52px ${DISPLAY}`;
+  context.fillText(rankText, pillX + pillW / 2, pillY + pillH / 2 - 10);
+  context.font = `700 18px ${MONO}`;
+  context.fillText(rankLabel, pillX + pillW / 2, pillY + pillH / 2 + 28);
   context.textAlign = "left";
   context.textBaseline = "alphabetic";
 }
