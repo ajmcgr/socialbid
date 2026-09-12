@@ -67,6 +67,8 @@ function CreatorPage() {
   const [payouts, setPayouts] = useState<PayoutStatus | null>(null);
   const [notificationEmail, setNotificationEmail] = useState("");
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const enterMarketSeen = useRef(false);
 
   const loadPayouts = useCallback(() => {
     void getPayoutStatus({ data: {} })
