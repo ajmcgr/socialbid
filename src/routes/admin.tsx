@@ -165,6 +165,15 @@ function Admin() {
                   ? `profile verified (${c.x_bio_verified_method ?? "api"})`
                   : "profile unverified"}
               </span>
+              <span
+                className={`px-1.5 py-0.5 font-mono text-[10px] ${
+                  listing?.status === "active"
+                    ? "bg-foreground text-background"
+                    : "border border-border"
+                }`}
+              >
+                {listing?.status === "active" ? "Listed" : "Not listed"}
+              </span>
               {c.banned && (
                 <span className="bg-destructive px-1.5 py-0.5 font-mono text-[10px] text-destructive-foreground">
                   BANNED
