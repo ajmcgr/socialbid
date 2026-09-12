@@ -19,7 +19,19 @@ export const Route = createFileRoute("/api/public/share-avatar")({
           return new Response("Image host not allowed", { status: 403 });
         }
 
-        const upstream = await fetch(imageUrl, { redirect: "error" });
+        const upstream = await fetch(imageUrl, {
+          redirect: "follow",
+          headers: { Accept: "image/avif,image/webp,image/jpeg,image/png,image/*" },
+        });
+        let finalUrl: URL;
+        try {
+          finalUrl = new URL(upstream.url || imageUrl.toString());
+        } catch {
+          return new Response("Image unavailable", { status: 404 });
+        }
+        if (finalUrl.protocol !== "https:" || !ALLOWED_HOSTS.has(finalUrl.hostname)) {
+          return new Response("Image redirect not allowed", { status: 403 });
+        }
         const contentType = upstream.headers.get("content-type") ?? "";
         if (!upstream.ok || !upstream.body || !contentType.startsWith("image/")) {
           return new Response("Image unavailable", { status: 404 });
@@ -28,6 +40,7 @@ export const Route = createFileRoute("/api/public/share-avatar")({
           headers: {
             "Content-Type": contentType,
             "Cache-Control": "public, max-age=86400",
+            "Access-Control-Allow-Origin": "*",
             "X-Content-Type-Options": "nosniff",
           },
         });

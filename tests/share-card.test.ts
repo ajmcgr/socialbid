@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   avatarProxyUrl,
+  highResolutionXAvatarUrl,
   shareCardFilename,
   shareCardPostText,
   shareCardProfileUrl,
@@ -36,5 +37,11 @@ describe("creator share card helpers", () => {
     expect(shareCardFilename("Alex Name!")).toBe("social-bid-alex-name.png");
     expect(avatarProxyUrl(base.avatarUrl)).toContain("/api/public/share-avatar?src=");
     expect(avatarProxyUrl(null)).toBeNull();
+  });
+
+  test("requests a crisp X avatar instead of the small normal image", () => {
+    expect(
+      highResolutionXAvatarUrl("https://pbs.twimg.com/profile_images/1234/avatar_normal.jpg"),
+    ).toBe("https://pbs.twimg.com/profile_images/1234/avatar_400x400.jpg");
   });
 });

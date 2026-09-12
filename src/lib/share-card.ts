@@ -32,6 +32,24 @@ export function shareCardState(data: ShareCardData): "sponsored" | "market-entry
   return data.sponsorName && data.currentValueCents !== null ? "sponsored" : "market-entry";
 }
 
+export function highResolutionXAvatarUrl(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== "pbs.twimg.com") return url;
+    parsed.pathname = parsed.pathname.replace(/_normal(?=\.[a-z0-9]+$)/i, "_400x400");
+    if (parsed.pathname.includes("/profile_images/") && !/_\d+x\d+\.[a-z0-9]+$/i.test(parsed.pathname)) {
+      parsed.searchParams.set("name", "large");
+    }
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 export function avatarProxyUrl(url: string | null): string | null {
-  return url ? `/api/public/share-avatar?src=${encodeURIComponent(url)}` : null;
+  const highResolutionUrl = highResolutionXAvatarUrl(url);
+  return highResolutionUrl
+    ? `/api/public/share-avatar?src=${encodeURIComponent(highResolutionUrl)}`
+    : null;
 }
