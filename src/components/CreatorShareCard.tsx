@@ -166,7 +166,7 @@ function drawDotField(
       const cx = x + column * step + step / 2;
       const cy = y + row * step + step / 2;
       const fade = 1 - Math.min(1, Math.abs(cx - (x + width / 2)) / (width / 1.5));
-      context.fillStyle = `rgba(66,181,255,${0.1 + fade * 0.3})`;
+      context.fillStyle = `rgba(103,235,114,${0.1 + fade * 0.3})`;
       context.beginPath();
       context.arc(cx, cy, 4.5, 0, Math.PI * 2);
       context.fill();
