@@ -14,11 +14,32 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
     try {
       const { admin } = await import("./db.server");
       const db = admin();
-      const { data: link, error } = await db.auth.admin.generateLink({
+      let { data: link, error } = await db.auth.admin.generateLink({
         type: "recovery",
         email,
         options: { redirectTo: "https://socialbid.co/reset-password" },
       });
+
+      // A newsletter subscriber is not necessarily an Auth user. Create the
+      // account first so the same "set password" flow works for them too.
+      if (error || !link?.properties?.hashed_token) {
+        const { error: createError } = await db.auth.admin.createUser({
+          email,
+          email_confirm: true,
+        });
+        if (createError && !/already|registered|exists/i.test(createError.message)) {
+          console.error("create password account failed", createError);
+          return { ok: true } as const;
+        }
+        const generated = await db.auth.admin.generateLink({
+          type: "recovery",
+          email,
+          options: { redirectTo: "https://socialbid.co/reset-password" },
+        });
+        link = generated.data;
+        error = generated.error;
+      }
+
       const hashedToken = link?.properties?.hashed_token;
       if (error || !hashedToken) {
         console.error("generateLink failed", error);
@@ -35,7 +56,6 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
         actionLink,
         idempotencyKey: `pwd-reset:${email}:${Date.now()}`,
       });
-
     } catch (e) {
       console.error("password reset failed", e);
     }
