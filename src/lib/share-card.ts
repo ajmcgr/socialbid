@@ -25,6 +25,10 @@ export function shareCardPostText(data: ShareCardData): string {
     : `${handle} just entered the market on Social Bid.`;
 }
 
+export function shareCardState(data: ShareCardData): "sponsored" | "market-entry" {
+  return data.sponsorName && data.currentValueCents !== null ? "sponsored" : "market-entry";
+}
+
 export function avatarProxyUrl(url: string | null): string | null {
   return url ? `/api/public/share-avatar?src=${encodeURIComponent(url)}` : null;
 }

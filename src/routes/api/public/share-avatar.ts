@@ -19,7 +19,7 @@ export const Route = createFileRoute("/api/public/share-avatar")({
           return new Response("Image host not allowed", { status: 403 });
         }
 
-        const upstream = await fetch(imageUrl, { redirect: "follow" });
+        const upstream = await fetch(imageUrl, { redirect: "error" });
         const contentType = upstream.headers.get("content-type") ?? "";
         if (!upstream.ok || !upstream.body || !contentType.startsWith("image/")) {
           return new Response("Image unavailable", { status: 404 });

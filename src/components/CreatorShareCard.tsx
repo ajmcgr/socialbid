@@ -7,6 +7,7 @@ import {
   shareCardFilename,
   shareCardPostText,
   shareCardProfileUrl,
+  shareCardState,
   type ShareCardData,
 } from "@/lib/share-card";
 
@@ -70,7 +71,8 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.font = "800 86px Inter, Arial, sans-serif";
   context.fillText("SOCIAL BID", 72, 112);
   context.font = "700 27px 'Courier New', monospace";
-  context.fillText(data.sponsorName ? "SPONSORSHIP ANNOUNCEMENT" : "MARKET ENTRY", 76, 171);
+  const sponsored = shareCardState(data) === "sponsored";
+  context.fillText(sponsored ? "SPONSORSHIP ANNOUNCEMENT" : "MARKET ENTRY", 76, 171);
   context.textAlign = "right";
   context.fillStyle = MUTED;
   context.fillText(data.globalRank ? `GLOBAL RANK #${data.globalRank}` : "OPEN MARKET", 1128, 171);
@@ -103,8 +105,9 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const textX = 714;
   const textWidth = 414;
   context.fillStyle = BLUE;
-  context.font = "700 34px 'Courier New', monospace";
-  context.fillText(`@${data.handle ?? data.username}`, textX, 342);
+  const handle = `@${data.handle ?? data.username}`;
+  context.font = `700 ${fitText(context, handle, textWidth, 34)}px 'Courier New', monospace`;
+  context.fillText(ellipsize(context, handle, textWidth), textX, 342);
   context.fillStyle = INK;
   const nameSize = fitText(context, data.displayName.toUpperCase(), textWidth, 68);
   context.font = `800 ${nameSize}px Inter, Arial, sans-serif`;
@@ -113,8 +116,8 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.fillRect(textX, 468, textWidth, 7);
 
   context.font = "800 60px Inter, Arial, sans-serif";
-  context.fillText(data.sponsorName ? "SPONSORED" : "ENTERED", textX, 584);
-  context.fillText(data.sponsorName ? "ON SOCIAL BID" : "THE MARKET", textX, 654);
+  context.fillText(sponsored ? "SPONSORED" : "ENTERED", textX, 584);
+  context.fillText(sponsored ? "ON SOCIAL BID" : "THE MARKET", textX, 654);
   context.fillStyle = BLUE;
   context.fillRect(textX, 707, 86, 12);
   context.fillStyle = INK;
@@ -124,10 +127,10 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
 
   context.fillStyle = PAPER;
   context.font = "700 26px 'Courier New', monospace";
-  context.fillText(data.sponsorName ? "CURRENT VALUE" : "OPENING BID", 72, 984);
+  context.fillText(sponsored ? "CURRENT VALUE" : "OPENING BID", 72, 984);
   context.font = "800 88px Inter, Arial, sans-serif";
   context.fillText(money(data.currentValueCents ?? data.startingPriceCents), 72, 1076);
-  if (data.sponsorName) {
+  if (sponsored && data.sponsorName) {
     context.textAlign = "right";
     context.font = "700 25px 'Courier New', monospace";
     context.fillStyle = MUTED;
@@ -152,10 +155,12 @@ export function CreatorShareCard({ data, compact = false }: { data: ShareCardDat
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [copySupported, setCopySupported] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     setCopySupported(typeof ClipboardItem !== "undefined" && Boolean(navigator.clipboard?.write));
-    if (canvasRef.current) void drawCard(canvasRef.current, data);
+    setReady(false);
+    if (canvasRef.current) void drawCard(canvasRef.current, data).then(() => setReady(true));
   }, [data]);
 
   const download = useCallback(async () => {
@@ -201,11 +206,11 @@ export function CreatorShareCard({ data, compact = false }: { data: ShareCardDat
       />
       <div className="mt-4 flex flex-wrap gap-2">
         {copySupported ? (
-          <Button type="button" variant="outline" onClick={copyImage}>
+          <Button type="button" variant="outline" disabled={!ready} onClick={copyImage}>
             <Clipboard /> Copy image
           </Button>
         ) : null}
-        <Button type="button" variant="outline" onClick={download}>
+        <Button type="button" variant="outline" disabled={!ready} onClick={download}>
           <Download /> Download image
         </Button>
         {compact ? (
