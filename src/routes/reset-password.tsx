@@ -33,13 +33,15 @@ function ResetPassword() {
     const params = new URLSearchParams(window.location.search);
     const tokenHash = params.get("token_hash");
     if (tokenHash) {
-      sb.auth.verifyOtp({ type: "recovery", token_hash: tokenHash }).then(({ error }) => {
-        if (error) setMsg("This link is invalid or has expired. Request a new one.");
-        else {
-          setReady(true);
-          window.history.replaceState({}, "", "/reset-password");
+      void (async () => {
+        const { error } = await sb.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
+        if (error) {
+          setMsg("This link is invalid or has expired. Request a new one.");
+          return;
         }
-      });
+        setReady(true);
+        window.history.replaceState({}, "", "/reset-password");
+      })();
       return;
     }
     // Legacy hash-style links.
