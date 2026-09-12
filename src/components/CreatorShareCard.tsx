@@ -226,6 +226,15 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.font = `800 40px ${DISPLAY}`;
   context.fillText(sponsored ? "SPONSORSHIP NEWS" : "MARKET ENTRY", pad + 44, pad + 62);
 
+  // Global rank.
+  const rank = data.globalRank ? `#${data.globalRank}` : "—";
+  context.fillStyle = PAPER;
+  context.font = `800 64px ${DISPLAY}`;
+  context.fillText(rank, pad + 44, pad + 128);
+  context.font = `700 22px ${MONO}`;
+  context.fillStyle = "rgba(255,255,255,0.7)";
+  context.fillText("MOST VALUABLE", pad + 44, pad + 158);
+
   try {
     const brand = await loadImage("/social-bid-logo.png");
     const tinted = tintedLogo(brand, PAPER, 300);
