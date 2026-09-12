@@ -18,10 +18,10 @@ function rememberMarket(market: MarketplaceSnapshot) {
 
 export const Route = createFileRoute("/")({
   validateSearch: z.object({
-    sort: sortSchema.optional().catch("trending"),
+    sort: sortSchema.optional().catch("most-valuable"),
     page: z.coerce.number().int().min(1).optional().catch(1),
   }),
-  loaderDeps: ({ search }) => ({ sort: search.sort ?? "trending" }),
+  loaderDeps: ({ search }) => ({ sort: search.sort ?? "most-valuable" }),
   loader: async ({ deps }) => {
     try {
       const market = await getMarketplace({ data: { sort: deps.sort } });

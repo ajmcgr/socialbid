@@ -17,8 +17,8 @@ import { XIcon } from "./XIcon";
 import { CreatorAvatar } from "./CreatorAvatar";
 
 const sorts: Array<{ value: MarketplaceSort; label: string }> = [
-  { value: "trending", label: "Trending" },
   { value: "most-valuable", label: "Most valuable" },
+  { value: "trending", label: "Trending" },
   { value: "new", label: "New" },
   { value: "affordable", label: "Affordable" },
 ];
@@ -27,7 +27,7 @@ const RANKINGS_PAGE_SIZE = 50;
 
 function rankingsPageHref(sort: MarketplaceSort, page: number) {
   const params = new URLSearchParams();
-  if (sort !== "trending") params.set("sort", sort);
+  if (sort !== "most-valuable") params.set("sort", sort);
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
   return query ? `/?${query}` : "/";
@@ -88,8 +88,8 @@ function TrafficCounters() {
       rel="noopener noreferrer"
       className="font-mono text-xs font-bold text-primary hover:underline"
     >
-      {traffic ? traffic.pageviews.toLocaleString() : "—"} total visitors ·{" "}
-      {traffic?.online ?? "—"} live ↗
+      {traffic ? traffic.pageviews.toLocaleString() : "—"} total visitors · {traffic?.online ?? "—"}{" "}
+      live ↗
     </a>
   );
 }
@@ -212,9 +212,7 @@ function LeaderboardRow({
   const displayRank = position + 1;
   return (
     <article
-      className={`grid gap-4 border-x-2 border-b-2 border-border p-4 sm:grid-cols-[3rem_minmax(0,1.4fr)_0.75fr_minmax(0,1.15fr)_auto] sm:items-center sm:gap-5 sm:px-5 ${
-        "bg-card"
-      }`}
+      className={`grid gap-4 border-x-2 border-b-2 border-border p-4 sm:grid-cols-[3rem_minmax(0,1.4fr)_0.75fr_minmax(0,1.15fr)_auto] sm:items-center sm:gap-5 sm:px-5 ${"bg-card"}`}
     >
       <div
         className="font-mono text-2xl font-extrabold"
