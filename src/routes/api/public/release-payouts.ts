@@ -52,7 +52,17 @@ export const Route = createFileRoute("/api/public/release-payouts")({
         const summary = await releaseDuePayouts();
         const { processRefundQueue } = await import("@/lib/refunds.server");
         const refunds = await processRefundQueue();
-        return Response.json({ activation, verification, transitions, payouts: summary, refunds });
+        // Nudge creators who have money waiting but no payout account yet.
+        const { runPayoutSetupReminderSweep } = await import("@/lib/payout-reminders.server");
+        const payoutReminders = await runPayoutSetupReminderSweep();
+        return Response.json({
+          activation,
+          verification,
+          transitions,
+          payouts: summary,
+          refunds,
+          payoutReminders,
+        });
       },
     },
   },
