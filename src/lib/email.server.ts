@@ -405,3 +405,25 @@ export async function sendPayoutReleasedEmail(o: { to: string; amountCents: numb
     ),
   );
 }
+
+export async function sendPayoutSetupReminderEmail(o: {
+  to: string;
+  amountCents: number;
+  idempotencyKey: string;
+}) {
+  return send(
+    o.to,
+    "You have earnings waiting — connect your payout account",
+    shell(
+      `
+      ${h1("Your earnings are waiting")}
+      ${p("You've earned money from sponsorships on Social Bid, but we can't send it until your payout account is connected. It takes about two minutes.")}
+      ${facts([["Waiting to be paid", money(o.amountCents)]])}
+      ${button(`${baseUrl()}/creator`, "Connect payouts \u2192")}
+      ${p("Once connected, held payouts are released automatically after their standard 7-day hold.")}
+    `,
+      "You received this because you added your profile to Social Bid.",
+    ),
+    { idempotencyKey: o.idempotencyKey },
+  );
+}
