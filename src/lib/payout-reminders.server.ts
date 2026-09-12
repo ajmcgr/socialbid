@@ -55,8 +55,9 @@ export async function runPayoutSetupReminderSweep(): Promise<PayoutReminderSumma
       "creator_id",
       pendingSetup.map((creator) => creator.id),
     );
-  const reminderByCreator = new Map((reminders ?? []).map((row) => [row.creator_id as string, row]));
-
+  const reminderByCreator = new Map(
+    (reminders ?? []).map((row) => [row.creator_id as string, row]),
+  );
 
   const now = Date.now();
   const cutoff = REMINDER_INTERVAL_DAYS * 24 * 60 * 60 * 1000;
