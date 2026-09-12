@@ -277,7 +277,11 @@ function CreatorPage() {
                   disabled={busy}
                   className="btn-ink btn-ink-hover mt-6 w-full justify-center text-base tracking-[0.05em] uppercase disabled:opacity-50 sm:w-auto"
                 >
-                  {busy ? "Entering the market…" : publishError ? "Try again →" : "Enter the market →"}
+                  {busy
+                    ? "Entering the market…"
+                    : publishError
+                      ? "Try again →"
+                      : "Enter the market →"}
                 </button>
 
                 <p className="mt-3 font-mono text-xs text-muted-foreground">
