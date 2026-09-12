@@ -161,8 +161,11 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const sponsored = shareCardState(data) === "sponsored";
   context.clearRect(0, 0, SIZE, SIZE);
 
-  // Flat paper background, no gradients.
-  context.fillStyle = PAPER_BG;
+  // Poster background: green gradient.
+  const gradient = context.createLinearGradient(0, 0, SIZE, SIZE);
+  gradient.addColorStop(0, GREEN);
+  gradient.addColorStop(1, "#38833e");
+  context.fillStyle = gradient;
   context.fillRect(0, 0, SIZE, SIZE);
 
   // Inner card frame.
@@ -267,9 +270,9 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   }
   context.restore();
 
-  // Name banner: flat green strip.
+  // Name banner: white strip for contrast on green gradient.
   const bannerY = py + ph + 26;
-  context.fillStyle = GREEN;
+  context.fillStyle = PAPER;
   context.fillRect(px, bannerY, pw, 96);
   context.strokeStyle = INK;
   context.lineWidth = 4;
@@ -321,7 +324,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const pillH = 86;
   const pillX = px + pw - pillW - 20;
   const pillY = py + 20;
-  context.fillStyle = GREEN;
+  context.fillStyle = PAPER;
   context.fillRect(pillX, pillY, pillW, pillH);
   context.strokeStyle = INK;
   context.lineWidth = 4;
