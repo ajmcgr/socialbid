@@ -240,22 +240,54 @@ function CreatorPage() {
             </div>
           </div>
 
-          {!session.publiclyListed ? (
-            <div className="panel mt-6 border-4 p-6">
-              <div className="label-xs">Last step — you're not live yet</div>
-              <h2 className="mt-1 text-xl font-semibold">Add my profile to the rankings</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Your X account is connected, but sponsors can't see or sponsor you until your
-                profile is live. Nothing changes on X — sponsorships only appear on Social Bid, and
-                you keep 80% of every sponsorship.
-              </p>
-              <button
-                onClick={onPublish}
-                disabled={busy}
-                className="btn-ink btn-ink-hover mt-5 disabled:opacity-50"
-              >
-                {busy ? "Working…" : "Add my profile"}
-              </button>
+          {showEnterMarket ? (
+            <div className="mt-6 border-4 border-border">
+              <div className="flex items-center justify-between gap-3 border-b-4 border-border bg-foreground px-5 py-3 font-mono text-xs font-bold tracking-[0.14em] text-background uppercase">
+                <span>✓ X profile verified</span>
+                <span className="opacity-70">Not listed</span>
+              </div>
+              <div className="px-5 py-7 sm:px-7">
+                <h2 className="text-[clamp(1.6rem,5vw,2.4rem)] leading-[0.95] font-semibold tracking-[-0.04em]">
+                  You're ready to enter the market.
+                </h2>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Publish your profile and brands can start bidding to sponsor you.
+                </p>
+
+                <div className="mt-6 flex items-baseline gap-3 border-2 border-border px-4 py-3">
+                  <span className="font-mono text-[0.65rem] font-bold tracking-[0.14em] uppercase">
+                    Opening bid
+                  </span>
+                  <span className="text-2xl font-extrabold">
+                    {money(session.startingPriceCents ?? 1000)}
+                  </span>
+                </div>
+
+                {publishError ? (
+                  <div
+                    role="alert"
+                    className="mt-5 border-2 border-destructive px-4 py-3 text-sm font-medium text-destructive"
+                  >
+                    {publishError}
+                  </div>
+                ) : null}
+
+                <button
+                  onClick={onPublish}
+                  disabled={busy}
+                  className="btn-ink btn-ink-hover mt-6 w-full justify-center text-base tracking-[0.05em] uppercase disabled:opacity-50 sm:w-auto"
+                >
+                  {busy ? "Entering the market…" : publishError ? "Try again →" : "Enter the market →"}
+                </button>
+
+                <p className="mt-3 font-mono text-xs text-muted-foreground">
+                  Your profile isn't public until you enter the market.
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Nothing changes on X — sponsorships only appear on Social Bid, and you keep 80% of
+                  every sponsorship.
+                </p>
+              </div>
             </div>
           ) : null}
 
