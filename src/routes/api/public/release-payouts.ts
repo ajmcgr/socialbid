@@ -65,6 +65,7 @@ export const Route = createFileRoute("/api/public/release-payouts")({
           payouts: summary,
           refunds,
           payoutReminders,
+          listingReminders,
         });
       },
     },
