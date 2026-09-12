@@ -28,8 +28,21 @@ function ResetPassword() {
       setMsg("Auth is not configured yet.");
       return;
     }
-    // The recovery link arrives with type=recovery in the URL hash; the
-    // Supabase client exchanges it for a session automatically.
+    // Our reset emails carry ?token_hash=...&type=recovery which we exchange
+    // for a recovery session here.
+    const params = new URLSearchParams(window.location.search);
+    const tokenHash = params.get("token_hash");
+    if (tokenHash) {
+      sb.auth.verifyOtp({ type: "recovery", token_hash: tokenHash }).then(({ error }) => {
+        if (error) setMsg("This link is invalid or has expired. Request a new one.");
+        else {
+          setReady(true);
+          window.history.replaceState({}, "", "/reset-password");
+        }
+      });
+      return;
+    }
+    // Legacy hash-style links.
     const hash = window.location.hash;
     if (hash.includes("type=recovery") || hash.includes("access_token")) {
       setReady(true);
@@ -45,6 +58,7 @@ function ResetPassword() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
