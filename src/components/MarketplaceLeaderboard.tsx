@@ -330,12 +330,17 @@ export function MarketplaceLeaderboard({
 }) {
   const router = useRouter();
   const [realtimeEpoch, setRealtimeEpoch] = useState(0);
+  const [showAllUnowned, setShowAllUnowned] = useState(false);
 
   useEffect(() => {
     const restartRealtime = () => setRealtimeEpoch((epoch) => epoch + 1);
     window.addEventListener("social-bid-recover", restartRealtime);
     return () => window.removeEventListener("social-bid-recover", restartRealtime);
   }, []);
+
+  useEffect(() => {
+    setShowAllUnowned(false);
+  }, [market.sort, page]);
 
   useEffect(() => {
     const refresh = () => void router.invalidate();
@@ -368,6 +373,9 @@ export function MarketplaceLeaderboard({
     ? visibleRows.slice(Math.max(0, market.rows.length - pageStart))
     : [];
   const showSeparateUnowned = visibleUnowned.length > 0;
+  const displayedUnowned =
+    showAllUnowned || visibleUnowned.length <= 8 ? visibleUnowned : visibleUnowned.slice(0, 8);
+  const canExpandUnowned = visibleUnowned.length > 8;
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-5">
@@ -454,7 +462,7 @@ export function MarketplaceLeaderboard({
             </Link>
           </div>
           <div className="border-t-2 border-border">
-            {visibleUnowned.map((row, index) => (
+            {displayedUnowned.map((row, index) => (
               <LeaderboardRow
                 key={row.listing.id}
                 row={row}
@@ -462,6 +470,28 @@ export function MarketplaceLeaderboard({
               />
             ))}
           </div>
+          {canExpandUnowned ? (
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  if (showAllUnowned) {
+                    setShowAllUnowned(false);
+                    document
+                      .getElementById("unowned-heading")
+                      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                  } else {
+                    setShowAllUnowned(true);
+                  }
+                }}
+                className="text-sm font-bold text-foreground underline hover:no-underline"
+              >
+                {showAllUnowned
+                  ? "Show fewer ↑"
+                  : `Show all ${market.unowned.length.toLocaleString()} unsponsored profiles ↓`}
+              </button>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
