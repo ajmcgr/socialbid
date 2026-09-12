@@ -22,6 +22,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SuccessRouteImport } from './routes/success'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TestUnownedRouteImport } from './routes/test-unowned'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as ApiPublicOutboundRouteImport } from './routes/api/public/outbound'
 import { Route as ApiPublicReleasePayoutsRouteImport } from './routes/api/public/release-payouts'
@@ -95,6 +96,11 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TestUnownedRoute = TestUnownedRouteImport.update({
+  id: '/test-unowned',
+  path: '/test-unowned',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UUsernameRoute = UUsernameRouteImport.update({
   id: '/u/$username',
   path: '/u/$username',
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/success': typeof SuccessRoute
   '/terms': typeof TermsRoute
+  '/test-unowned': typeof TestUnownedRoute
   '/u/$username': typeof UUsernameRoute
   '/api/public/outbound': typeof ApiPublicOutboundRoute
   '/api/public/release-payouts': typeof ApiPublicReleasePayoutsRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/success': typeof SuccessRoute
   '/terms': typeof TermsRoute
+  '/test-unowned': typeof TestUnownedRoute
   '/u/$username': typeof UUsernameRoute
   '/api/public/outbound': typeof ApiPublicOutboundRoute
   '/api/public/release-payouts': typeof ApiPublicReleasePayoutsRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/success': typeof SuccessRoute
   '/terms': typeof TermsRoute
+  '/test-unowned': typeof TestUnownedRoute
   '/u/$username': typeof UUsernameRoute
   '/api/public/outbound': typeof ApiPublicOutboundRoute
   '/api/public/release-payouts': typeof ApiPublicReleasePayoutsRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/success'
     | '/terms'
+    | '/test-unowned'
     | '/u/$username'
     | '/api/public/outbound'
     | '/api/public/release-payouts'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/success'
     | '/terms'
+    | '/test-unowned'
     | '/u/$username'
     | '/api/public/outbound'
     | '/api/public/release-payouts'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/success'
     | '/terms'
+    | '/test-unowned'
     | '/u/$username'
     | '/api/public/outbound'
     | '/api/public/release-payouts'
@@ -281,6 +293,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SuccessRoute: typeof SuccessRoute
   TermsRoute: typeof TermsRoute
+  TestUnownedRoute: typeof TestUnownedRoute
   UUsernameRoute: typeof UUsernameRoute
   ApiPublicOutboundRoute: typeof ApiPublicOutboundRoute
   ApiPublicReleasePayoutsRoute: typeof ApiPublicReleasePayoutsRoute
@@ -383,6 +396,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/test-unowned': {
+      id: '/test-unowned'
+      path: '/test-unowned'
+      fullPath: '/test-unowned'
+      preLoaderRoute: typeof TestUnownedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/u/$username': {
       id: '/u/$username'
       path: '/u/$username'
@@ -449,6 +469,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SuccessRoute: SuccessRoute,
   TermsRoute: TermsRoute,
+  TestUnownedRoute: TestUnownedRoute,
   UUsernameRoute: UUsernameRoute,
   ApiPublicOutboundRoute: ApiPublicOutboundRoute,
   ApiPublicReleasePayoutsRoute: ApiPublicReleasePayoutsRoute,
