@@ -68,7 +68,7 @@ function Admin() {
 
     let active = true;
 
-    const useSession = async (accessToken: string | null) => {
+    const applySession = async (accessToken: string | null) => {
       if (!active) return;
       setToken(accessToken);
       if (!accessToken) {
@@ -86,9 +86,9 @@ function Admin() {
       // getSession below owns initial restoration. Ignoring INITIAL_SESSION
       // prevents a stale empty startup event from replacing a valid session.
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
-        void useSession(session?.access_token ?? null);
+        void applySession(session?.access_token ?? null);
       } else if (event === "SIGNED_OUT") {
-        void useSession(null);
+        void applySession(null);
       }
     });
 
@@ -111,7 +111,7 @@ function Admin() {
         session = refreshedData.session;
       }
 
-      await useSession(session?.access_token ?? null);
+      await applySession(session?.access_token ?? null);
     })();
 
     return () => {
