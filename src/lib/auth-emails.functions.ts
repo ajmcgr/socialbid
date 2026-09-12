@@ -29,7 +29,7 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
         });
         if (createError && !/already|registered|exists/i.test(createError.message)) {
           console.error("create password account failed", createError);
-          return { ok: true } as const;
+          return { ok: false } as const;
         }
         const generated = await db.auth.admin.generateLink({
           type: "recovery",
@@ -43,7 +43,7 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
       const hashedToken = link?.properties?.hashed_token;
       if (error || !hashedToken) {
         console.error("generateLink failed", error);
-        return { ok: true } as const;
+        return { ok: false } as const;
       }
       // Build our own link so we never depend on the Supabase project's
       // Site URL / redirect allow-list (which points at another domain).
@@ -51,13 +51,14 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
         hashedToken,
       )}&type=recovery`;
       const { sendPasswordResetEmail } = await import("./email.server");
-      await sendPasswordResetEmail({
+      const sent = await sendPasswordResetEmail({
         to: email,
         actionLink,
         idempotencyKey: `pwd-reset:${email}:${Date.now()}`,
       });
+      return { ok: sent.sent } as const;
     } catch (e) {
       console.error("password reset failed", e);
+      return { ok: false } as const;
     }
-    return { ok: true } as const;
   });
