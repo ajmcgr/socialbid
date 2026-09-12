@@ -39,7 +39,10 @@ export function highResolutionXAvatarUrl(url: string | null): string | null {
     const parsed = new URL(url);
     if (parsed.hostname !== "pbs.twimg.com") return url;
     parsed.pathname = parsed.pathname.replace(/_normal(?=\.[a-z0-9]+$)/i, "_400x400");
-    if (parsed.pathname.includes("/profile_images/") && !/_\d+x\d+\.[a-z0-9]+$/i.test(parsed.pathname)) {
+    if (
+      parsed.pathname.includes("/profile_images/") &&
+      !/_\d+x\d+\.[a-z0-9]+$/i.test(parsed.pathname)
+    ) {
       parsed.searchParams.set("name", "large");
     }
     return parsed.toString();

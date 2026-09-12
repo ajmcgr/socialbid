@@ -59,7 +59,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 async function loadAvatar(url: string | null): Promise<HTMLImageElement | null> {
   const direct = highResolutionXAvatarUrl(url);
   const sources = [avatarProxyUrl(url), direct].filter(
-    (source, index, values): source is string => Boolean(source) && values.indexOf(source) === index,
+    (source, index, values): source is string =>
+      Boolean(source) && values.indexOf(source) === index,
   );
   for (const source of sources) {
     try {
@@ -73,7 +74,8 @@ async function loadAvatar(url: string | null): Promise<HTMLImageElement | null> 
 
 async function loadSponsorLogo(url: string | null): Promise<HTMLImageElement | null> {
   const sources = [sponsorLogoProxyUrl(url), url].filter(
-    (source, index, values): source is string => Boolean(source) && values.indexOf(source) === index,
+    (source, index, values): source is string =>
+      Boolean(source) && values.indexOf(source) === index,
   );
   for (const source of sources) {
     try {
@@ -227,7 +229,11 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.font = "800 68px Arial Black, Inter, sans-serif";
-    context.fillText(data.sponsorName?.trim().slice(0, 1).toUpperCase() || "S", logoX + 75, logoY + 78);
+    context.fillText(
+      data.sponsorName?.trim().slice(0, 1).toUpperCase() || "S",
+      logoX + 75,
+      logoY + 78,
+    );
   } else {
     drawOpenMarketMark(context, logoX, logoY, logoSize);
   }
