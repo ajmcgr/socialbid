@@ -201,10 +201,10 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const sponsored = shareCardState(data) === "sponsored";
   context.clearRect(0, 0, SIZE, SIZE);
 
-  // Background: deep blue field with soft scanlines.
+  // Background: deep green field with soft scanlines.
   const backdrop = context.createLinearGradient(0, 0, SIZE, SIZE);
   backdrop.addColorStop(0, DEEP);
-  backdrop.addColorStop(0.5, "#0b2f6d");
+  backdrop.addColorStop(0.5, FOREST);
   backdrop.addColorStop(1, DEEP);
   context.fillStyle = backdrop;
   context.fillRect(0, 0, SIZE, SIZE);
@@ -216,7 +216,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const cardW = SIZE - pad * 2;
   context.fillStyle = INK;
   context.fillRect(pad, pad, cardW, SIZE - pad * 2);
-  context.strokeStyle = "rgba(66,181,255,0.55)";
+  context.strokeStyle = "rgba(103,235,114,0.55)";
   context.lineWidth = 3;
   context.strokeRect(pad + 1.5, pad + 1.5, cardW - 3, SIZE - pad * 2 - 3);
 
