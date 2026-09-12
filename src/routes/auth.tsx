@@ -35,7 +35,7 @@ function Auth() {
     const f = new FormData(e.currentTarget);
     const email = String(f.get("email"));
     const password = String(f.get("password"));
-    const { error } =
+    const { data, error } =
       mode === "in"
         ? await sb.auth.signInWithPassword({ email, password })
         : await sb.auth.signUp({
@@ -46,7 +46,8 @@ function Auth() {
     setBusy(false);
     if (error) setMsg(error.message);
     else if (mode === "up") setMsg("Check your email to confirm your account.");
-    else navigate({ to: "/admin" });
+    else if (!data.session) setMsg("Please confirm your email, then sign in again.");
+    else navigate({ to: "/admin", replace: true });
   }
 
   return (
