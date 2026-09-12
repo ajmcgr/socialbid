@@ -24,6 +24,7 @@ import {
   payoutDashboardLink,
   type PayoutStatus,
 } from "@/lib/payouts.functions";
+import { trackEvent } from "@/lib/listing.functions";
 import { money } from "@/lib/format";
 
 export const Route = createFileRoute("/creator")({
