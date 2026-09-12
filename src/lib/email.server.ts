@@ -406,6 +406,29 @@ export async function sendPayoutReleasedEmail(o: { to: string; amountCents: numb
   );
 }
 
+export async function sendListingActivationReminderEmail(o: {
+  to: string;
+  displayName: string;
+  startingPriceCents: number;
+  idempotencyKey: string;
+}) {
+  return send(
+    o.to,
+    "Your Social Bid profile isn't live yet",
+    shell(
+      `
+      ${h1("One click and you're live")}
+      ${p(`Hi ${o.displayName} — your X account is connected, but your profile still isn't showing in the Social Bid rankings, so sponsors can't sponsor you yet.`)}
+      ${facts([["Opening sponsorship price", money(o.startingPriceCents)]])}
+      ${button(`${baseUrl()}/creator`, "Add my profile \u2192")}
+      ${p("Nothing changes on X. Sponsorships only appear on Social Bid, and you keep 80% of every sponsorship.")}
+    `,
+      "You received this because you connected your X account to Social Bid.",
+    ),
+    { idempotencyKey: o.idempotencyKey },
+  );
+}
+
 export async function sendPayoutSetupReminderEmail(o: {
   to: string;
   amountCents: number;
