@@ -185,7 +185,11 @@ function drawAvatarFallback(
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.font = `800 320px ${DISPLAY}`;
-  context.fillText(data.displayName.trim().slice(0, 1).toUpperCase() || "S", x + width / 2, y + height / 2);
+  context.fillText(
+    data.displayName.trim().slice(0, 1).toUpperCase() || "S",
+    x + width / 2,
+    y + height / 2,
+  );
   context.restore();
 }
 
@@ -334,7 +338,12 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const headline = sponsored ? "SPONSORED" : "LISTED";
   const headlineY = bannerY + 96 + 92;
   const headlineSize = fitText(context, headline, pw - 40, 168, DISPLAY, 800, 60);
-  const metal = context.createLinearGradient(0, headlineY - headlineSize / 2, 0, headlineY + headlineSize / 2);
+  const metal = context.createLinearGradient(
+    0,
+    headlineY - headlineSize / 2,
+    0,
+    headlineY + headlineSize / 2,
+  );
   metal.addColorStop(0, "#ffffff");
   metal.addColorStop(0.5, "#cfd8e3");
   metal.addColorStop(1, "#8fa3ba");
@@ -347,11 +356,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.font = `700 26px ${MONO}`;
   context.fillStyle = SKY;
   context.textAlign = "left";
-  context.fillText(
-    ellipsize(context, `@${data.handle ?? data.username}`, 420),
-    px,
-    footY,
-  );
+  context.fillText(ellipsize(context, `@${data.handle ?? data.username}`, 420), px, footY);
   context.textAlign = "center";
   context.fillStyle = PAPER;
   context.font = `800 34px ${DISPLAY}`;
@@ -367,7 +372,6 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.textAlign = "left";
   context.textBaseline = "alphabetic";
 }
-
 
 function canvasBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
