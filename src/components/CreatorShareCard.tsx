@@ -92,7 +92,6 @@ async function loadSponsorLogo(url: string | null): Promise<HTMLImageElement | n
   return null;
 }
 
-
 function drawCoverImage(
   context: CanvasRenderingContext2D,
   image: HTMLImageElement,
@@ -134,7 +133,6 @@ function drawContainImage(
     drawnHeight,
   );
 }
-
 
 function drawAvatarFallback(
   context: CanvasRenderingContext2D,
