@@ -86,7 +86,7 @@ function Auth() {
         )}
         {msg && (
           <p
-            className={`text-sm font-medium ${msg.startsWith("Check your email") ? "" : "text-destructive"}`}
+            className={`text-sm font-medium ${msg.startsWith("Check your email") || msg.startsWith("If that email") ? "" : "text-destructive"}`}
           >
             {msg}
           </p>
