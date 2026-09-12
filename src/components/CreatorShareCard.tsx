@@ -270,9 +270,9 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   }
   context.restore();
 
-  // Name banner: flat green strip.
+  // Name banner: white strip for contrast on green gradient.
   const bannerY = py + ph + 26;
-  context.fillStyle = GREEN;
+  context.fillStyle = PAPER;
   context.fillRect(px, bannerY, pw, 96);
   context.strokeStyle = INK;
   context.lineWidth = 4;
