@@ -24,6 +24,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as ApiPublicOutboundRouteImport } from './routes/api/public/outbound'
 import { Route as ApiPublicReleasePayoutsRouteImport } from './routes/api/public/release-payouts'
+import { Route as ApiPublicShareAvatarRouteImport } from './routes/api/public/share-avatar'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
 import { Route as ApiPublicXCallbackRouteImport } from './routes/api/public/x-callback'
 import { Route as ApiPublicXStartRouteImport } from './routes/api/public/x-start'
@@ -103,6 +104,11 @@ const ApiPublicReleasePayoutsRoute = ApiPublicReleasePayoutsRouteImport.update({
   path: '/api/public/release-payouts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicShareAvatarRoute = ApiPublicShareAvatarRouteImport.update({
+  id: '/api/public/share-avatar',
+  path: '/api/public/share-avatar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe-webhook',
   path: '/api/public/stripe-webhook',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/u/$username': typeof UUsernameRoute
   '/api/public/outbound': typeof ApiPublicOutboundRoute
   '/api/public/release-payouts': typeof ApiPublicReleasePayoutsRoute
+  '/api/public/share-avatar': typeof ApiPublicShareAvatarRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/x-callback': typeof ApiPublicXCallbackRoute
   '/api/public/x-start': typeof ApiPublicXStartRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/u/$username': typeof UUsernameRoute
   '/api/public/outbound': typeof ApiPublicOutboundRoute
   '/api/public/release-payouts': typeof ApiPublicReleasePayoutsRoute
+  '/api/public/share-avatar': typeof ApiPublicShareAvatarRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/x-callback': typeof ApiPublicXCallbackRoute
   '/api/public/x-start': typeof ApiPublicXStartRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/u/$username': typeof UUsernameRoute
   '/api/public/outbound': typeof ApiPublicOutboundRoute
   '/api/public/release-payouts': typeof ApiPublicReleasePayoutsRoute
+  '/api/public/share-avatar': typeof ApiPublicShareAvatarRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/x-callback': typeof ApiPublicXCallbackRoute
   '/api/public/x-start': typeof ApiPublicXStartRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/api/public/outbound'
     | '/api/public/release-payouts'
+    | '/api/public/share-avatar'
     | '/api/public/stripe-webhook'
     | '/api/public/x-callback'
     | '/api/public/x-start'
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/api/public/outbound'
     | '/api/public/release-payouts'
+    | '/api/public/share-avatar'
     | '/api/public/stripe-webhook'
     | '/api/public/x-callback'
     | '/api/public/x-start'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/api/public/outbound'
     | '/api/public/release-payouts'
+    | '/api/public/share-avatar'
     | '/api/public/stripe-webhook'
     | '/api/public/x-callback'
     | '/api/public/x-start'
@@ -259,6 +271,7 @@ export interface RootRouteChildren {
   UUsernameRoute: typeof UUsernameRoute
   ApiPublicOutboundRoute: typeof ApiPublicOutboundRoute
   ApiPublicReleasePayoutsRoute: typeof ApiPublicReleasePayoutsRoute
+  ApiPublicShareAvatarRoute: typeof ApiPublicShareAvatarRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   ApiPublicXCallbackRoute: typeof ApiPublicXCallbackRoute
   ApiPublicXStartRoute: typeof ApiPublicXStartRoute
@@ -371,6 +384,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicReleasePayoutsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/share-avatar': {
+      id: '/api/public/share-avatar'
+      path: '/api/public/share-avatar'
+      fullPath: '/api/public/share-avatar'
+      preLoaderRoute: typeof ApiPublicShareAvatarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/stripe-webhook': {
       id: '/api/public/stripe-webhook'
       path: '/api/public/stripe-webhook'
@@ -411,6 +431,7 @@ const rootRouteChildren: RootRouteChildren = {
   UUsernameRoute: UUsernameRoute,
   ApiPublicOutboundRoute: ApiPublicOutboundRoute,
   ApiPublicReleasePayoutsRoute: ApiPublicReleasePayoutsRoute,
+  ApiPublicShareAvatarRoute: ApiPublicShareAvatarRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   ApiPublicXCallbackRoute: ApiPublicXCallbackRoute,
   ApiPublicXStartRoute: ApiPublicXStartRoute,

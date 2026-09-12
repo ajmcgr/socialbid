@@ -10,6 +10,16 @@ import {
 } from "@/lib/admin.functions";
 import { getSupabase } from "@/integrations/supabase/browser";
 import { money, hostOf } from "@/lib/format";
+import { CreatorShareCard } from "@/components/CreatorShareCard";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import type { ShareCardData } from "@/lib/share-card";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -35,6 +45,7 @@ function Admin() {
   const [token, setToken] = useState<string | null>(null);
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [shareCard, setShareCard] = useState<ShareCardData | null>(null);
 
   const refresh = useCallback(
     async (t: string) => {
@@ -149,11 +160,36 @@ function Admin() {
                     {listing.status === "active" ? "Pause listing" : "Activate listing"}
                   </button>
                 )}
+                {data.shareCards.find((card) => card.creatorId === c.id) ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const card = data.shareCards.find((item) => item.creatorId === c.id);
+                      if (card) setShareCard(card);
+                    }}
+                  >
+                    Share card
+                  </Button>
+                ) : null}
               </div>
             </div>
           );
         })}
       </div>
+
+      <Dialog open={Boolean(shareCard)} onOpenChange={(open) => !open && setShareCard(null)}>
+        <DialogContent className="max-h-[92dvh] max-w-2xl overflow-y-auto border-2">
+          <DialogHeader>
+            <DialogTitle>Share creator announcement</DialogTitle>
+            <DialogDescription>
+              This card uses the creator’s current live marketplace details.
+            </DialogDescription>
+          </DialogHeader>
+          {shareCard ? <CreatorShareCard data={shareCard} compact /> : null}
+        </DialogContent>
+      </Dialog>
 
       <h2 className="mt-10 text-lg font-extrabold">Active owners</h2>
       <div className="panel mt-3 divide-y-2 divide-border">

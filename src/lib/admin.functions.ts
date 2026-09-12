@@ -54,6 +54,20 @@ export const getAdminData = createServerFn({ method: "POST" })
         .limit(50),
     ]);
 
+    const { loadMarketplace } = await import("./marketplace.server");
+    const market = await loadMarketplace("most-valuable");
+    const shareCards = [...market.rows, ...market.unowned].map((row) => ({
+      creatorId: row.creator.id,
+      username: row.creator.username,
+      displayName: row.creator.display_name,
+      handle: row.creator.x_username ?? row.creator.social_handle,
+      avatarUrl: row.creator.profile_image_url,
+      startingPriceCents: row.listing.starting_price_cents,
+      currentValueCents: row.bioValueCents,
+      globalRank: row.globalRank,
+      sponsorName: row.owner?.company_name ?? null,
+    }));
+
     const paid = (payments.data ?? []).filter(
       (p) => p.status === "applied" && p.stripe_livemode && p.refund_status !== "refunded",
     );
@@ -64,6 +78,7 @@ export const getAdminData = createServerFn({ method: "POST" })
       active: ownerships.data ?? [],
       payouts: payouts.data ?? [],
       violations: violations.data ?? [],
+      shareCards,
       gmvCents: paid.reduce((s, p) => s + p.amount_cents, 0),
     } as const;
   });
