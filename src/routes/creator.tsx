@@ -2,6 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Share2 } from "lucide-react";
 import { CreatorShareCard } from "@/components/CreatorShareCard";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   getCreatorSession,
   disconnectXAccount,
@@ -57,6 +65,7 @@ function CreatorPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [payouts, setPayouts] = useState<PayoutStatus | null>(null);
   const [notificationEmail, setNotificationEmail] = useState("");
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   const loadPayouts = useCallback(() => {
     void getPayoutStatus({ data: {} })
@@ -113,6 +122,7 @@ function CreatorPage() {
     setMessage("Your profile is now listed on Social Bid.");
     const next = await getCreatorSession({ data: {} });
     setSession(next);
+    setShowShareDialog(true);
     window.dispatchEvent(new Event("creator-session-changed"));
   }
 
@@ -341,6 +351,38 @@ function CreatorPage() {
                 }}
               />
             </section>
+          ) : null}
+
+          {session.publiclyListed && session.startingPriceCents !== null ? (
+            <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+              <DialogContent className="max-w-md sm:max-w-xl">
+                <DialogHeader>
+                  <DialogTitle>Your profile is live!</DialogTitle>
+                  <DialogDescription>
+                    Share your announcement card to help sponsors find you on Social Bid.
+                  </DialogDescription>
+                </DialogHeader>
+                <CreatorShareCard
+                  compact
+                  data={{
+                    username: session.username,
+                    displayName: session.displayName,
+                    handle: session.handle,
+                    avatarUrl: session.profileImageUrl,
+                    startingPriceCents: session.startingPriceCents,
+                    currentValueCents: session.bioValueCents,
+                    globalRank: session.globalRank,
+                    sponsorName: session.ownerName,
+                    sponsorLogoUrl: session.ownerLogoUrl,
+                  }}
+                />
+                <div className="flex justify-end">
+                  <Button variant="outline" onClick={() => setShowShareDialog(false)}>
+                    Maybe later
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           ) : null}
 
           {session.ownerMessage ? (
