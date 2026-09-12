@@ -282,7 +282,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
 
   // Sponsor badge floating over the portrait.
   const badgeW = 420;
-  const badgeH = 118;
+  const badgeH = 152;
   const badgeX = SIZE / 2 - badgeW / 2;
   const badgeY = py + ph - badgeH - 34;
   context.save();
@@ -296,11 +296,13 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.strokeRect(badgeX, badgeY, badgeW, badgeH);
 
   const sponsorLogo = sponsored ? await loadSponsorLogo(data.sponsorLogoUrl) : null;
+  const sponsorName = sponsored ? (data.sponsorName ?? "Sponsored").toUpperCase() : "UNSPONSORED";
   context.save();
   context.beginPath();
   context.rect(badgeX + 6, badgeY + 6, badgeW - 12, badgeH - 12);
   context.clip();
   if (sponsorLogo) {
+    const logoH = 78;
     drawContainImage(
       context,
       sponsorLogo,
@@ -309,10 +311,20 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
       badgeX + 16,
       badgeY + 14,
       badgeW - 32,
-      badgeH - 28,
+      logoH,
     );
+    const nameSize = fitText(context, sponsorName, badgeW - 48, 28, DISPLAY, 800, 16);
+    context.fillStyle = INK;
+    context.textAlign = "center";
+    context.font = `800 ${nameSize}px ${DISPLAY}`;
+    context.fillText(
+      ellipsize(context, sponsorName, badgeW - 48),
+      SIZE / 2,
+      badgeY + logoH + 38,
+    );
+    context.textAlign = "left";
   } else {
-    const label = sponsored ? (data.sponsorName ?? "SPONSORED").toUpperCase() : "UNSPONSORED";
+    const label = sponsorName;
     const size = fitText(context, label, badgeW - 48, 52, DISPLAY, 800, 22);
     context.fillStyle = INK;
     context.textAlign = "center";
