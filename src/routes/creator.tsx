@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Share2 } from "lucide-react";
 import { CreatorShareCard } from "@/components/CreatorShareCard";
 import { Button } from "@/components/ui/button";
