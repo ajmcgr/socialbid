@@ -65,12 +65,40 @@ function Admin() {
       setError("Auth is not configured.");
       return;
     }
-    sb.auth.getSession().then(({ data: s }) => {
-      const t = s.session?.access_token ?? null;
-      setToken(t);
-      if (!t) setError("Sign in at /auth first.");
-      else void refresh(t);
+
+    let active = true;
+
+    const useSession = async (accessToken: string | null) => {
+      if (!active) return;
+      setToken(accessToken);
+      if (!accessToken) {
+        setData(null);
+        setError("Sign in at /auth first.");
+        return;
+      }
+      setError(null);
+      await refresh(accessToken);
+    };
+
+    void sb.auth.getSession().then(async ({ data: sessionData, error: sessionError }) => {
+      if (!active) return;
+      if (sessionError) {
+        setError("Your sign-in session could not be restored. Please sign in again.");
+        return;
+      }
+      await useSession(sessionData.session?.access_token ?? null);
     });
+
+    const {
+      data: { subscription },
+    } = sb.auth.onAuthStateChange((_event, session) => {
+      void useSession(session?.access_token ?? null);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, [refresh]);
 
   async function run(action: string, id: string) {
