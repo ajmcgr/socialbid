@@ -221,7 +221,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.strokeRect(pad + 1.5, pad + 1.5, cardW - 3, SIZE - pad * 2 - 3);
 
   // Header: status kicker + brand mark.
-  context.fillStyle = SKY;
+  context.fillStyle = MINT;
   context.textBaseline = "middle";
   context.font = `800 40px ${DISPLAY}`;
   context.fillText(sponsored ? "SPONSORSHIP NEWS" : "MARKET ENTRY", pad + 44, pad + 62);
@@ -258,8 +258,8 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.rect(px, py, pw, ph);
   context.clip();
   const panel = context.createLinearGradient(px, py, px, py + ph);
-  panel.addColorStop(0, "#0d2f6b");
-  panel.addColorStop(1, "#061229");
+  panel.addColorStop(0, FOREST);
+  panel.addColorStop(1, MOSS);
   context.fillStyle = panel;
   context.fillRect(px, py, pw, ph);
   drawDotField(context, px, py, pw, ph);
@@ -276,7 +276,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.fillStyle = shade;
   context.fillRect(px, py, pw, ph);
   context.restore();
-  context.strokeStyle = "rgba(66,181,255,0.5)";
+  context.strokeStyle = "rgba(103,235,114,0.5)";
   context.lineWidth = 3;
   context.strokeRect(px + 1.5, py + 1.5, pw - 3, ph - 3);
 
