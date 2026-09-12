@@ -222,12 +222,13 @@ function CreatorPage() {
           </div>
 
           {!session.publiclyListed ? (
-            <div className="panel mt-6 p-6">
-              <div className="label-xs">Not live yet</div>
-              <h2 className="mt-1 text-xl font-semibold">Add my profile</h2>
+            <div className="panel mt-6 border-4 p-6">
+              <div className="label-xs">Last step — you're not live yet</div>
+              <h2 className="mt-1 text-xl font-semibold">Add my profile to the rankings</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Connecting X does not add you publicly. Publish when you're ready, then sponsors can
-                sponsor you on Social Bid.
+                Your X account is connected, but sponsors can't see or sponsor you until your
+                profile is live. Nothing changes on X — sponsorships only appear on Social Bid, and
+                you keep 80% of every sponsorship.
               </p>
               <button
                 onClick={onPublish}
