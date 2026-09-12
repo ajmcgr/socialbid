@@ -37,9 +37,13 @@ function Auth() {
     const password = String(f.get("password"));
     if (mode === "reset") {
       const { requestPasswordReset } = await import("@/lib/auth-emails.functions");
-      await requestPasswordReset({ data: { email } });
+      const result = await requestPasswordReset({ data: { email } });
       setBusy(false);
-      setMsg("If that email has an account, a password link is on its way.");
+      setMsg(
+        result.ok
+          ? "A new Social Bid password email is on its way. Use the newest email only."
+          : "We couldn't send the password email. Please try again in a moment.",
+      );
       return;
     }
     const { data, error } =
@@ -86,7 +90,7 @@ function Auth() {
         )}
         {msg && (
           <p
-            className={`text-sm font-medium ${msg.startsWith("Check your email") || msg.startsWith("If that email") ? "" : "text-destructive"}`}
+            className={`text-sm font-medium ${msg.startsWith("Check your email") || msg.startsWith("A new Social Bid") ? "" : "text-destructive"}`}
           >
             {msg}
           </p>
