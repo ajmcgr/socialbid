@@ -16,9 +16,11 @@ import {
 const SIZE = 1200;
 const INK = "#05060a";
 const PAPER = "#ffffff";
-const BLUE = "#206dcb";
-const SKY = "#42b5ff";
-const DEEP = "#020b1f";
+const GREEN = "#67eb72";
+const MINT = "#a3f7a8";
+const DEEP = "#05140a";
+const FOREST = "#0d3d1f";
+const MOSS = "#0a2a16";
 
 const DISPLAY = "Arial Black, Inter, sans-serif";
 const MONO = "'Courier New', monospace";
@@ -164,7 +166,7 @@ function drawDotField(
       const cx = x + column * step + step / 2;
       const cy = y + row * step + step / 2;
       const fade = 1 - Math.min(1, Math.abs(cx - (x + width / 2)) / (width / 1.5));
-      context.fillStyle = `rgba(66,181,255,${0.1 + fade * 0.3})`;
+      context.fillStyle = `rgba(103,235,114,${0.1 + fade * 0.3})`;
       context.beginPath();
       context.arc(cx, cy, 4.5, 0, Math.PI * 2);
       context.fill();
@@ -199,10 +201,10 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const sponsored = shareCardState(data) === "sponsored";
   context.clearRect(0, 0, SIZE, SIZE);
 
-  // Background: deep blue field with soft scanlines.
+  // Background: deep green field with soft scanlines.
   const backdrop = context.createLinearGradient(0, 0, SIZE, SIZE);
   backdrop.addColorStop(0, DEEP);
-  backdrop.addColorStop(0.5, "#0b2f6d");
+  backdrop.addColorStop(0.5, FOREST);
   backdrop.addColorStop(1, DEEP);
   context.fillStyle = backdrop;
   context.fillRect(0, 0, SIZE, SIZE);
@@ -214,12 +216,12 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const cardW = SIZE - pad * 2;
   context.fillStyle = INK;
   context.fillRect(pad, pad, cardW, SIZE - pad * 2);
-  context.strokeStyle = "rgba(66,181,255,0.55)";
+  context.strokeStyle = "rgba(103,235,114,0.55)";
   context.lineWidth = 3;
   context.strokeRect(pad + 1.5, pad + 1.5, cardW - 3, SIZE - pad * 2 - 3);
 
   // Header: status kicker + brand mark.
-  context.fillStyle = SKY;
+  context.fillStyle = MINT;
   context.textBaseline = "middle";
   context.font = `800 40px ${DISPLAY}`;
   context.fillText(sponsored ? "SPONSORSHIP NEWS" : "MARKET ENTRY", pad + 44, pad + 62);
@@ -256,8 +258,8 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.rect(px, py, pw, ph);
   context.clip();
   const panel = context.createLinearGradient(px, py, px, py + ph);
-  panel.addColorStop(0, "#0d2f6b");
-  panel.addColorStop(1, "#061229");
+  panel.addColorStop(0, FOREST);
+  panel.addColorStop(1, MOSS);
   context.fillStyle = panel;
   context.fillRect(px, py, pw, ph);
   drawDotField(context, px, py, pw, ph);
@@ -274,7 +276,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.fillStyle = shade;
   context.fillRect(px, py, pw, ph);
   context.restore();
-  context.strokeStyle = "rgba(66,181,255,0.5)";
+  context.strokeStyle = "rgba(103,235,114,0.5)";
   context.lineWidth = 3;
   context.strokeRect(px + 1.5, py + 1.5, pw - 3, ph - 3);
 
@@ -284,7 +286,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const badgeX = SIZE / 2 - badgeW / 2;
   const badgeY = py + ph - badgeH - 34;
   context.save();
-  context.shadowColor = "rgba(66,181,255,0.75)";
+  context.shadowColor = "rgba(103,235,114,0.75)";
   context.shadowBlur = 40;
   context.fillStyle = PAPER;
   context.fillRect(badgeX, badgeY, badgeW, badgeH);
@@ -323,13 +325,13 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   // Name banner.
   const bannerY = py + ph + 26;
   const banner = context.createLinearGradient(px, 0, px + pw, 0);
-  banner.addColorStop(0, BLUE);
-  banner.addColorStop(1, SKY);
+  banner.addColorStop(0, GREEN);
+  banner.addColorStop(1, MINT);
   context.fillStyle = banner;
   context.fillRect(px, bannerY, pw, 96);
   const name = data.displayName.toUpperCase();
   const nameSize = fitText(context, name, pw - 72, 64, DISPLAY, 800, 26);
-  context.fillStyle = PAPER;
+  context.fillStyle = INK;
   context.textAlign = "center";
   context.font = `800 ${nameSize}px ${DISPLAY}`;
   context.fillText(ellipsize(context, name, pw - 72), SIZE / 2, bannerY + 50);
@@ -345,8 +347,8 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
     headlineY + headlineSize / 2,
   );
   metal.addColorStop(0, "#ffffff");
-  metal.addColorStop(0.5, "#cfd8e3");
-  metal.addColorStop(1, "#8fa3ba");
+  metal.addColorStop(0.5, "#e0f9e3");
+  metal.addColorStop(1, MINT);
   context.font = `800 ${headlineSize}px ${DISPLAY}`;
   context.fillStyle = metal;
   context.fillText(headline, SIZE / 2, headlineY);
@@ -354,7 +356,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   // Footer strip: handle, value, domain.
   const footY = SIZE - pad - 52;
   context.font = `700 26px ${MONO}`;
-  context.fillStyle = SKY;
+  context.fillStyle = MINT;
   context.textAlign = "left";
   context.fillText(ellipsize(context, `@${data.handle ?? data.username}`, 420), px, footY);
   context.textAlign = "center";
