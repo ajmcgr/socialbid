@@ -324,7 +324,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const pillH = 86;
   const pillX = px + pw - pillW - 20;
   const pillY = py + 20;
-  context.fillStyle = GREEN;
+  context.fillStyle = PAPER;
   context.fillRect(pillX, pillY, pillW, pillH);
   context.strokeStyle = INK;
   context.lineWidth = 4;
