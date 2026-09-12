@@ -122,6 +122,7 @@ function CreatorPage() {
     setMessage("Your profile is now listed on Social Bid.");
     const next = await getCreatorSession({ data: {} });
     setSession(next);
+    setShowShareDialog(true);
     window.dispatchEvent(new Event("creator-session-changed"));
   }
 
