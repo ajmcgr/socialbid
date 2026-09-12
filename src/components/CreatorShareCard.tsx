@@ -16,9 +16,11 @@ import {
 const SIZE = 1200;
 const INK = "#05060a";
 const PAPER = "#ffffff";
-const BLUE = "#206dcb";
-const SKY = "#42b5ff";
-const DEEP = "#020b1f";
+const GREEN = "#67eb72";
+const MINT = "#a3f7a8";
+const DEEP = "#05140a";
+const FOREST = "#0d3d1f";
+const MOSS = "#0a2a16";
 
 const DISPLAY = "Arial Black, Inter, sans-serif";
 const MONO = "'Courier New', monospace";
