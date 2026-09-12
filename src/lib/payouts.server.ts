@@ -347,11 +347,10 @@ export async function releaseOne(payoutId: string): Promise<string> {
     if (ownership) {
       const { data: fresh } = await db
         .from("ownerships")
-        .select(
-          "status, placement_end_reason, final_verification_status, mismatch_pending_since, mismatch_recheck_at",
-        )
+        .select("*")
         .eq("id", ownership.id)
         .maybeSingle();
+
       if (fresh && fresh.status !== "active" && fresh.placement_end_reason !== "seller_removed") {
         if (fresh.final_verification_status !== "verified")
           return block(payoutId, "awaiting_final_transition_verification");
