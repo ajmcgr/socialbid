@@ -248,6 +248,32 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
     context.textAlign = "left";
   }
 
+  // Global rank pill.
+  const rankText = data.globalRank ? `#${data.globalRank}` : "—";
+  const rankLabel = "MOST VALUABLE";
+  context.font = `800 52px ${DISPLAY}`;
+  const rankNumWidth = context.measureText(rankText).width;
+  context.font = `700 18px ${MONO}`;
+  const rankLabelWidth = context.measureText(rankLabel).width;
+  const pillW = Math.max(rankNumWidth, rankLabelWidth) + 44;
+  const pillH = 86;
+  const pillX = SIZE - pad - 44 - pillW;
+  const pillY = pad + 108;
+  context.fillStyle = GREEN;
+  context.fillRect(pillX, pillY, pillW, pillH);
+  context.strokeStyle = INK;
+  context.lineWidth = 3;
+  context.strokeRect(pillX + 1.5, pillY + 1.5, pillW - 3, pillH - 3);
+  context.fillStyle = INK;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = `800 52px ${DISPLAY}`;
+  context.fillText(rankText, pillX + pillW / 2, pillY + pillH / 2 - 10);
+  context.font = `700 18px ${MONO}`;
+  context.fillText(rankLabel, pillX + pillW / 2, pillY + pillH / 2 + 28);
+  context.textAlign = "left";
+  context.textBaseline = "alphabetic";
+
   // Portrait panel.
   const px = pad + 44;
   const py = pad + 118;
@@ -317,11 +343,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
     context.fillStyle = INK;
     context.textAlign = "center";
     context.font = `800 ${nameSize}px ${DISPLAY}`;
-    context.fillText(
-      ellipsize(context, sponsorName, badgeW - 48),
-      SIZE / 2,
-      badgeY + logoH + 38,
-    );
+    context.fillText(ellipsize(context, sponsorName, badgeW - 48), SIZE / 2, badgeY + logoH + 38);
     context.textAlign = "left";
   } else {
     const label = sponsorName;
