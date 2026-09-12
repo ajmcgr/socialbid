@@ -280,6 +280,32 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.lineWidth = 3;
   context.strokeRect(px + 1.5, py + 1.5, pw - 3, ph - 3);
 
+  // Global rank pill — drawn last so the portrait never covers it.
+  const rankText = data.globalRank ? `#${data.globalRank}` : "—";
+  const rankLabel = "MOST VALUABLE";
+  context.font = `800 52px ${DISPLAY}`;
+  const rankNumWidth = context.measureText(rankText).width;
+  context.font = `700 18px ${MONO}`;
+  const rankLabelWidth = context.measureText(rankLabel).width;
+  const pillW = Math.max(rankNumWidth, rankLabelWidth) + 44;
+  const pillH = 86;
+  const pillX = px + pw - pillW - 20;
+  const pillY = py + 20;
+  context.fillStyle = GREEN;
+  context.fillRect(pillX, pillY, pillW, pillH);
+  context.strokeStyle = INK;
+  context.lineWidth = 3;
+  context.strokeRect(pillX + 1.5, pillY + 1.5, pillW - 3, pillH - 3);
+  context.fillStyle = INK;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = `800 52px ${DISPLAY}`;
+  context.fillText(rankText, pillX + pillW / 2, pillY + pillH / 2 - 10);
+  context.font = `700 18px ${MONO}`;
+  context.fillText(rankLabel, pillX + pillW / 2, pillY + pillH / 2 + 28);
+  context.textAlign = "left";
+  context.textBaseline = "alphabetic";
+
   // Sponsor badge floating over the portrait.
   const badgeW = 420;
   const badgeH = 152;
