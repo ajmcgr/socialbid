@@ -116,16 +116,29 @@ function CreatorPage() {
     return () => window.removeEventListener("social-bid-recover", recover);
   }, [loadCreatorSession, loadPayouts]);
 
+  // Fire once per page view, only for a verified-but-unlisted creator.
+  const showEnterMarket = Boolean(session && session.accountVerified && !session.publiclyListed);
+  useEffect(() => {
+    if (!showEnterMarket || enterMarketSeen.current) return;
+    enterMarketSeen.current = true;
+    void trackEvent({ data: { name: "enter_market_viewed" } }).catch(() => undefined);
+  }, [showEnterMarket]);
+
   async function onPublish() {
     if (!session) return;
     setBusy(true);
-    const res = await publishListing({ data: {} });
+    setPublishError(null);
+    void trackEvent({ data: { name: "enter_market_clicked" } }).catch(() => undefined);
+    const res = await publishListing({ data: {} }).catch(() => ({
+      error: "We couldn't reach Social Bid. Check your connection and try again.",
+    }));
     setBusy(false);
     if ("error" in res) {
-      setMessage(res.error);
+      setPublishError(res.error);
       return;
     }
-    setMessage("Your profile is now listed on Social Bid.");
+    void trackEvent({ data: { name: "listing_published" } }).catch(() => undefined);
+    setMessage("You're in the market — your profile is live on Social Bid.");
     const next = await getCreatorSession({ data: {} });
     setSession(next);
     setShowShareDialog(true);
