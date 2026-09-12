@@ -36,12 +36,10 @@ function Auth() {
     const email = String(f.get("email"));
     const password = String(f.get("password"));
     if (mode === "reset") {
-      const { error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + "/reset-password",
-      });
+      const { requestPasswordReset } = await import("@/lib/auth-emails.functions");
+      await requestPasswordReset({ data: { email } });
       setBusy(false);
-      if (error) setMsg(error.message);
-      else setMsg("Check your email for a link to set your password.");
+      setMsg("If that email has an account, a password link is on its way.");
       return;
     }
     const { data, error } =
@@ -88,7 +86,7 @@ function Auth() {
         )}
         {msg && (
           <p
-            className={`text-sm font-medium ${msg.startsWith("Check your email") ? "" : "text-destructive"}`}
+            className={`text-sm font-medium ${msg.startsWith("Check your email") || msg.startsWith("If that email") ? "" : "text-destructive"}`}
           >
             {msg}
           </p>

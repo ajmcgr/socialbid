@@ -427,3 +427,24 @@ export async function sendPayoutSetupReminderEmail(o: {
     { idempotencyKey: o.idempotencyKey },
   );
 }
+
+export async function sendPasswordResetEmail(o: {
+  to: string;
+  actionLink: string;
+  idempotencyKey: string;
+}) {
+  return send(
+    o.to,
+    "Set your Social Bid password",
+    shell(
+      `
+      ${h1("Set your password")}
+      ${p("Use the button below to choose a password for your Social Bid account. The link expires soon — if it stops working, request a fresh one from the sign-in page.")}
+      ${button(o.actionLink, "Set password \u2192")}
+      ${p("If you didn't ask for this, you can ignore this email.")}
+    `,
+      "You received this because a password reset was requested for your Social Bid account.",
+    ),
+    { idempotencyKey: o.idempotencyKey, throwOnFailure: true },
+  );
+}
