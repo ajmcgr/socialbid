@@ -46,14 +46,17 @@ export async function runPayoutSetupReminderSweep(): Promise<PayoutReminderSumma
     (creator) => !creator.banned && !creator.stripe_account_id,
   );
   summary.candidates = pendingSetup.length;
+  if (pendingSetup.length === 0) return summary;
 
   const { data: reminders } = await db
     .from("payout_setup_reminders")
     .select("creator_id, last_sent_at, sent_count")
-    .in("id" in {} ? "creator_id" : "creator_id", pendingSetup.map((creator) => creator.id));
-  const reminderByCreator = new Map(
-    (reminders ?? []).map((row) => [row.creator_id as string, row]),
-  );
+    .in(
+      "creator_id",
+      pendingSetup.map((creator) => creator.id),
+    );
+  const reminderByCreator = new Map((reminders ?? []).map((row) => [row.creator_id as string, row]));
+
 
   const now = Date.now();
   const cutoff = REMINDER_INTERVAL_DAYS * 24 * 60 * 60 * 1000;
