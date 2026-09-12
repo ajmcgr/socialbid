@@ -19,16 +19,23 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
         email,
         options: { redirectTo: "https://socialbid.co/reset-password" },
       });
-      if (error || !link?.properties?.action_link) {
+      const hashedToken = link?.properties?.hashed_token;
+      if (error || !hashedToken) {
         console.error("generateLink failed", error);
         return { ok: true } as const;
       }
+      // Build our own link so we never depend on the Supabase project's
+      // Site URL / redirect allow-list (which points at another domain).
+      const actionLink = `https://socialbid.co/reset-password?token_hash=${encodeURIComponent(
+        hashedToken,
+      )}&type=recovery`;
       const { sendPasswordResetEmail } = await import("./email.server");
       await sendPasswordResetEmail({
         to: email,
-        actionLink: link.properties.action_link,
+        actionLink,
         idempotencyKey: `pwd-reset:${email}:${Date.now()}`,
       });
+
     } catch (e) {
       console.error("password reset failed", e);
     }
