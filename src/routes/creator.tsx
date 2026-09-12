@@ -2,6 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Share2 } from "lucide-react";
 import { CreatorShareCard } from "@/components/CreatorShareCard";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   getCreatorSession,
   disconnectXAccount,
