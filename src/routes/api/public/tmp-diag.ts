@@ -10,17 +10,12 @@ export const Route = createFileRoute("/api/public/tmp-diag")({
         }
         const { admin } = await import("@/lib/db.server");
         const db = admin();
-        const { data: creators } = await db
-          .from("creators")
-          .select(
-            "id, display_name, username, x_username, banned, x_account_verified, profile_image_url, x_profile_image_url",
-          )
-          .or("x_username.ilike.%yeonji%,x_username.ilike.%GadgetFreak%");
-        const ids = (creators ?? []).map((c: { id: string }) => c.id);
-        const { data: listings } = ids.length
-          ? await db.from("listings").select("*").in("creator_id", ids)
-          : { data: [] };
-        return Response.json({ creators, listings });
+        const { data, error } = await db
+          .from("listings")
+          .update({ status: "active" })
+          .eq("creator_id", "d98bc176-cc8a-4b94-839e-1dbdfd20975a")
+          .select("id, slug, status");
+        return Response.json({ data, error });
       },
     },
   },
