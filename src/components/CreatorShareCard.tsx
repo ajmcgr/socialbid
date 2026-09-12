@@ -226,8 +226,12 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   }
   context.restore();
   context.strokeStyle = INK;
-  context.lineWidth = 4;
+  context.lineWidth = 6;
+  context.lineJoin = "miter";
+  context.lineCap = "butt";
   context.strokeRect(portraitX, portraitY, portraitW, portraitH);
+  context.lineWidth = 4;
+
 
   // Sponsor badge floating over the portrait.
   const badgeW = 420;
