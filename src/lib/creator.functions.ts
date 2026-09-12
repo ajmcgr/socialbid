@@ -19,6 +19,7 @@ export type CreatorSession = {
   publiclyListed: boolean;
   requiredPlacement: string;
   banned: boolean;
+  startingPriceCents: number | null;
   bioValueCents: number | null;
   globalRank: number | null;
   ownerName: string | null;
@@ -121,6 +122,7 @@ export const getCreatorSession = createServerFn({ method: "POST" })
       publiclyListed: Boolean(marketRow),
       requiredPlacement: requiredPlacement(c.username),
       banned: Boolean(c.banned),
+      startingPriceCents: marketRow?.listing.starting_price_cents ?? null,
       bioValueCents: marketRow?.bioValueCents ?? null,
       globalRank: marketRow?.globalRank ?? null,
       ownerName: marketRow?.owner?.company_name ?? null,

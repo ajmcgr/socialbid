@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Share2 } from "lucide-react";
+import { CreatorShareCard } from "@/components/CreatorShareCard";
 import {
   getCreatorSession,
   disconnectXAccount,
@@ -315,6 +316,30 @@ function CreatorPage() {
                 </a>
               ) : null}
             </div>
+          ) : null}
+
+          {session.publiclyListed && session.startingPriceCents !== null ? (
+            <section className="mt-8" aria-labelledby="share-profile-heading">
+              <div className="label-xs">Creator announcement</div>
+              <h2 id="share-profile-heading" className="mt-1 text-xl font-semibold">
+                Share your profile
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Download your live market card or share your profile on X.
+              </p>
+              <CreatorShareCard
+                data={{
+                  username: session.username,
+                  displayName: session.displayName,
+                  handle: session.handle,
+                  avatarUrl: session.profileImageUrl,
+                  startingPriceCents: session.startingPriceCents,
+                  currentValueCents: session.bioValueCents,
+                  globalRank: session.globalRank,
+                  sponsorName: session.ownerName,
+                }}
+              />
+            </section>
           ) : null}
 
           {session.ownerMessage ? (
