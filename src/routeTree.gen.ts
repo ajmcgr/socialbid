@@ -19,6 +19,7 @@ import { Route as CreatorRouteImport } from './routes/creator'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as OwnersRouteImport } from './routes/owners'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SuccessRouteImport } from './routes/success'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -79,6 +80,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SuccessRoute = SuccessRouteImport.update({
   id: '/success',
   path: '/success',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/faq': typeof FaqRoute
   '/owners': typeof OwnersRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/success': typeof SuccessRoute
   '/terms': typeof TermsRoute
   '/u/$username': typeof UUsernameRoute
@@ -157,6 +164,7 @@ export interface FileRoutesByTo {
   '/faq': typeof FaqRoute
   '/owners': typeof OwnersRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/success': typeof SuccessRoute
   '/terms': typeof TermsRoute
   '/u/$username': typeof UUsernameRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/faq': typeof FaqRoute
   '/owners': typeof OwnersRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/success': typeof SuccessRoute
   '/terms': typeof TermsRoute
   '/u/$username': typeof UUsernameRoute
@@ -202,6 +211,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/owners'
     | '/privacy'
+    | '/reset-password'
     | '/success'
     | '/terms'
     | '/u/$username'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/owners'
     | '/privacy'
+    | '/reset-password'
     | '/success'
     | '/terms'
     | '/u/$username'
@@ -244,6 +255,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/owners'
     | '/privacy'
+    | '/reset-password'
     | '/success'
     | '/terms'
     | '/u/$username'
@@ -266,6 +278,7 @@ export interface RootRouteChildren {
   FaqRoute: typeof FaqRoute
   OwnersRoute: typeof OwnersRoute
   PrivacyRoute: typeof PrivacyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SuccessRoute: typeof SuccessRoute
   TermsRoute: typeof TermsRoute
   UUsernameRoute: typeof UUsernameRoute
@@ -349,6 +362,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/success': {
       id: '/success'
       path: '/success'
@@ -426,6 +446,7 @@ const rootRouteChildren: RootRouteChildren = {
   FaqRoute: FaqRoute,
   OwnersRoute: OwnersRoute,
   PrivacyRoute: PrivacyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SuccessRoute: SuccessRoute,
   TermsRoute: TermsRoute,
   UUsernameRoute: UUsernameRoute,

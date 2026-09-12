@@ -19,7 +19,7 @@ export const Route = createFileRoute("/auth")({
 
 function Auth() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"in" | "up">("in");
+  const [mode, setMode] = useState<"in" | "up" | "reset">("in");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -35,6 +35,15 @@ function Auth() {
     const f = new FormData(e.currentTarget);
     const email = String(f.get("email"));
     const password = String(f.get("password"));
+    if (mode === "reset") {
+      const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/reset-password",
+      });
+      setBusy(false);
+      if (error) setMsg(error.message);
+      else setMsg("Check your email for a link to set your password.");
+      return;
+    }
     const { data, error } =
       mode === "in"
         ? await sb.auth.signInWithPassword({ email, password })
