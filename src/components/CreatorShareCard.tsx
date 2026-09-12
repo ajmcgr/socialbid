@@ -161,8 +161,11 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const sponsored = shareCardState(data) === "sponsored";
   context.clearRect(0, 0, SIZE, SIZE);
 
-  // Flat paper background, no gradients.
-  context.fillStyle = PAPER_BG;
+  // Poster background: green gradient.
+  const gradient = context.createLinearGradient(0, 0, SIZE, SIZE);
+  gradient.addColorStop(0, GREEN);
+  gradient.addColorStop(1, "#38833e");
+  context.fillStyle = gradient;
   context.fillRect(0, 0, SIZE, SIZE);
 
   // Inner card frame.
