@@ -286,7 +286,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   const badgeX = SIZE / 2 - badgeW / 2;
   const badgeY = py + ph - badgeH - 34;
   context.save();
-  context.shadowColor = "rgba(66,181,255,0.75)";
+  context.shadowColor = "rgba(103,235,114,0.75)";
   context.shadowBlur = 40;
   context.fillStyle = PAPER;
   context.fillRect(badgeX, badgeY, badgeW, badgeH);
@@ -325,13 +325,13 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   // Name banner.
   const bannerY = py + ph + 26;
   const banner = context.createLinearGradient(px, 0, px + pw, 0);
-  banner.addColorStop(0, BLUE);
-  banner.addColorStop(1, SKY);
+  banner.addColorStop(0, GREEN);
+  banner.addColorStop(1, MINT);
   context.fillStyle = banner;
   context.fillRect(px, bannerY, pw, 96);
   const name = data.displayName.toUpperCase();
   const nameSize = fitText(context, name, pw - 72, 64, DISPLAY, 800, 26);
-  context.fillStyle = PAPER;
+  context.fillStyle = INK;
   context.textAlign = "center";
   context.font = `800 ${nameSize}px ${DISPLAY}`;
   context.fillText(ellipsize(context, name, pw - 72), SIZE / 2, bannerY + 50);
@@ -347,8 +347,8 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
     headlineY + headlineSize / 2,
   );
   metal.addColorStop(0, "#ffffff");
-  metal.addColorStop(0.5, "#cfd8e3");
-  metal.addColorStop(1, "#8fa3ba");
+  metal.addColorStop(0.5, "#e0f9e3");
+  metal.addColorStop(1, MINT);
   context.font = `800 ${headlineSize}px ${DISPLAY}`;
   context.fillStyle = metal;
   context.fillText(headline, SIZE / 2, headlineY);
@@ -356,7 +356,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   // Footer strip: handle, value, domain.
   const footY = SIZE - pad - 52;
   context.font = `700 26px ${MONO}`;
-  context.fillStyle = SKY;
+  context.fillStyle = MINT;
   context.textAlign = "left";
   context.fillText(ellipsize(context, `@${data.handle ?? data.username}`, 420), px, footY);
   context.textAlign = "center";
