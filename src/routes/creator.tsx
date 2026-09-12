@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Share2 } from "lucide-react";
 import { CreatorShareCard } from "@/components/CreatorShareCard";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import {
   payoutDashboardLink,
   type PayoutStatus,
 } from "@/lib/payouts.functions";
+import { trackEvent } from "@/lib/listing.functions";
 import { money } from "@/lib/format";
 
 export const Route = createFileRoute("/creator")({
@@ -66,6 +67,8 @@ function CreatorPage() {
   const [payouts, setPayouts] = useState<PayoutStatus | null>(null);
   const [notificationEmail, setNotificationEmail] = useState("");
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const enterMarketSeen = useRef(false);
 
   const loadPayouts = useCallback(() => {
     void getPayoutStatus({ data: {} })
@@ -90,7 +93,10 @@ function CreatorPage() {
     const err = params.get("error");
     if (err) setMessage(errorCopy(err));
     const connected = params.get("connected");
-    if (connected && !err) setMessage(`X connected — @${connected}`);
+    if (connected && !err) {
+      setMessage(`X connected — @${connected}`);
+      void trackEvent({ data: { name: "x_auth_completed" } }).catch(() => undefined);
+    }
     const stripeReturn = params.get("stripe");
     if (connected || stripeReturn) {
       window.history.replaceState({}, "", "/creator");
@@ -110,16 +116,29 @@ function CreatorPage() {
     return () => window.removeEventListener("social-bid-recover", recover);
   }, [loadCreatorSession, loadPayouts]);
 
+  // Fire once per page view, only for a verified-but-unlisted creator.
+  const showEnterMarket = Boolean(session && session.accountVerified && !session.publiclyListed);
+  useEffect(() => {
+    if (!showEnterMarket || enterMarketSeen.current) return;
+    enterMarketSeen.current = true;
+    void trackEvent({ data: { name: "enter_market_viewed" } }).catch(() => undefined);
+  }, [showEnterMarket]);
+
   async function onPublish() {
     if (!session) return;
     setBusy(true);
-    const res = await publishListing({ data: {} });
+    setPublishError(null);
+    void trackEvent({ data: { name: "enter_market_clicked" } }).catch(() => undefined);
+    const res = await publishListing({ data: {} }).catch(() => ({
+      error: "We couldn't reach Social Bid. Check your connection and try again.",
+    }));
     setBusy(false);
     if ("error" in res) {
-      setMessage(res.error);
+      setPublishError(res.error);
       return;
     }
-    setMessage("Your profile is now listed on Social Bid.");
+    void trackEvent({ data: { name: "listing_published" } }).catch(() => undefined);
+    setMessage("You're in the market — your profile is live on Social Bid.");
     const next = await getCreatorSession({ data: {} });
     setSession(next);
     setShowShareDialog(true);
@@ -221,22 +240,58 @@ function CreatorPage() {
             </div>
           </div>
 
-          {!session.publiclyListed ? (
-            <div className="panel mt-6 border-4 p-6">
-              <div className="label-xs">Last step — you're not live yet</div>
-              <h2 className="mt-1 text-xl font-semibold">Add my profile to the rankings</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Your X account is connected, but sponsors can't see or sponsor you until your
-                profile is live. Nothing changes on X — sponsorships only appear on Social Bid, and
-                you keep 80% of every sponsorship.
-              </p>
-              <button
-                onClick={onPublish}
-                disabled={busy}
-                className="btn-ink btn-ink-hover mt-5 disabled:opacity-50"
-              >
-                {busy ? "Working…" : "Add my profile"}
-              </button>
+          {showEnterMarket ? (
+            <div className="mt-6 border-4 border-border">
+              <div className="flex items-center justify-between gap-3 border-b-4 border-border bg-foreground px-5 py-3 font-mono text-xs font-bold tracking-[0.14em] text-background uppercase">
+                <span>✓ X profile verified</span>
+                <span className="opacity-70">Not listed</span>
+              </div>
+              <div className="px-5 py-7 sm:px-7">
+                <h2 className="text-[clamp(1.6rem,5vw,2.4rem)] leading-[0.95] font-semibold tracking-[-0.04em]">
+                  You're ready to enter the market.
+                </h2>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Publish your profile and brands can start bidding to sponsor you.
+                </p>
+
+                <div className="mt-6 flex items-baseline gap-3 border-2 border-border px-4 py-3">
+                  <span className="font-mono text-[0.65rem] font-bold tracking-[0.14em] uppercase">
+                    Opening bid
+                  </span>
+                  <span className="text-2xl font-extrabold">
+                    {money(session.startingPriceCents ?? 1000)}
+                  </span>
+                </div>
+
+                {publishError ? (
+                  <div
+                    role="alert"
+                    className="mt-5 border-2 border-destructive px-4 py-3 text-sm font-medium text-destructive"
+                  >
+                    {publishError}
+                  </div>
+                ) : null}
+
+                <button
+                  onClick={onPublish}
+                  disabled={busy}
+                  className="btn-ink btn-ink-hover mt-6 w-full justify-center text-base tracking-[0.05em] uppercase disabled:opacity-50 sm:w-auto"
+                >
+                  {busy
+                    ? "Entering the market…"
+                    : publishError
+                      ? "Try again →"
+                      : "Enter the market →"}
+                </button>
+
+                <p className="mt-3 font-mono text-xs text-muted-foreground">
+                  Your profile isn't public until you enter the market.
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Nothing changes on X — sponsorships only appear on Social Bid, and you keep 80% of
+                  every sponsorship.
+                </p>
+              </div>
             </div>
           ) : null}
 
