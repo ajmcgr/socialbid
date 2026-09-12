@@ -16,11 +16,8 @@ import {
 const SIZE = 1200;
 const INK = "#05060a";
 const PAPER = "#ffffff";
+const PAPER_BG = "#fbfaf8";
 const GREEN = "#67eb72";
-const MINT = "#a3f7a8";
-const DEEP = "#05140a";
-const FOREST = "#0d3d1f";
-const MOSS = "#0a2a16";
 
 const DISPLAY = "Arial Black, Inter, sans-serif";
 const MONO = "'Courier New', monospace";
@@ -95,20 +92,6 @@ async function loadSponsorLogo(url: string | null): Promise<HTMLImageElement | n
   return null;
 }
 
-/** The stored brand mark is black artwork, so recolour it for dark backgrounds. */
-function tintedLogo(image: HTMLImageElement, colour: string, width: number) {
-  const height = Math.round((image.naturalHeight / image.naturalWidth) * width);
-  const buffer = document.createElement("canvas");
-  buffer.width = width;
-  buffer.height = height;
-  const paint = buffer.getContext("2d");
-  if (!paint) return null;
-  paint.drawImage(image, 0, 0, width, height);
-  paint.globalCompositeOperation = "source-in";
-  paint.fillStyle = colour;
-  paint.fillRect(0, 0, width, height);
-  return { canvas: buffer, width, height };
-}
 
 function drawCoverImage(
   context: CanvasRenderingContext2D,
@@ -152,27 +135,6 @@ function drawContainImage(
   );
 }
 
-/** Halftone dot field behind the portrait — keeps the frame alive without clutter. */
-function drawDotField(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-) {
-  const step = 26;
-  for (let row = 0; row * step < height; row += 1) {
-    for (let column = 0; column * step < width; column += 1) {
-      const cx = x + column * step + step / 2;
-      const cy = y + row * step + step / 2;
-      const fade = 1 - Math.min(1, Math.abs(cx - (x + width / 2)) / (width / 1.5));
-      context.fillStyle = `rgba(103,235,114,${0.1 + fade * 0.3})`;
-      context.beginPath();
-      context.arc(cx, cy, 4.5, 0, Math.PI * 2);
-      context.fill();
-    }
-  }
-}
 
 function drawAvatarFallback(
   context: CanvasRenderingContext2D,
@@ -183,7 +145,7 @@ function drawAvatarFallback(
   height: number,
 ) {
   context.save();
-  context.fillStyle = PAPER;
+  context.fillStyle = INK;
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.font = `800 320px ${DISPLAY}`;
