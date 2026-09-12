@@ -188,15 +188,15 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
       brand,
       brand.naturalWidth,
       brand.naturalHeight,
-      SIZE - pad - 44 - 300,
-      pad + 62 - 36,
-      300,
-      72,
+      SIZE - pad - 44 - 420,
+      pad + 62 - 50,
+      420,
+      100,
     );
   } catch {
     context.textAlign = "right";
     context.fillStyle = INK;
-    context.font = `800 40px ${DISPLAY}`;
+    context.font = `800 48px ${DISPLAY}`;
     context.fillText("SOCIAL BID", SIZE - pad - 44, pad + 62);
     context.textAlign = "left";
   }
