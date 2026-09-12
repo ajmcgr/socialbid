@@ -203,13 +203,16 @@ export async function releaseOne(payoutId: string): Promise<string> {
   // Each purchase has its own payout and its own hold. The placement only has
   // to be live while THIS buyer is still the current owner — being legitimately
   // outbid ends the obligation and keeps the payout eligible.
-  const { data: ownership } = await db
+  // Select every column: naming optional lifecycle columns explicitly makes the
+  // whole read fail (and look like a missing ownership) on any environment where
+  // a later migration has not been applied yet.
+  const { data: ownership, error: ownershipError } = await db
     .from("ownerships")
-    .select(
-      "id, status, placement_status, destination_url, bio_message, placement_format, bio_verification_status, placement_end_reason, first_verified_at, final_verification_status, final_verified_at, mismatch_pending_since",
-    )
+    .select("*")
     .eq("payment_id", payout.payment_id)
     .maybeSingle();
+  if (ownershipError) return block(payoutId, `ownership_read_failed: ${ownershipError.message}`);
+
 
   const now = new Date().toISOString();
 
@@ -344,11 +347,10 @@ export async function releaseOne(payoutId: string): Promise<string> {
     if (ownership) {
       const { data: fresh } = await db
         .from("ownerships")
-        .select(
-          "status, placement_end_reason, final_verification_status, mismatch_pending_since, mismatch_recheck_at",
-        )
+        .select("*")
         .eq("id", ownership.id)
         .maybeSingle();
+
       if (fresh && fresh.status !== "active" && fresh.placement_end_reason !== "seller_removed") {
         if (fresh.final_verification_status !== "verified")
           return block(payoutId, "awaiting_final_transition_verification");
