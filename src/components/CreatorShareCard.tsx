@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { money } from "@/lib/format";
 import {
   avatarProxyUrl,
+  highResolutionXAvatarUrl,
   shareCardFilename,
   shareCardPostText,
   shareCardProfileUrl,
@@ -43,10 +44,29 @@ function ellipsize(context: CanvasRenderingContext2D, text: string, maxWidth: nu
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
-    image.onload = () => resolve(image);
+    image.crossOrigin = "anonymous";
+    image.onload = () => {
+      if (image.naturalWidth > 0 && image.naturalHeight > 0) resolve(image);
+      else reject(new Error("Avatar image is empty"));
+    };
     image.onerror = reject;
     image.src = src;
   });
+}
+
+async function loadAvatar(url: string | null): Promise<HTMLImageElement | null> {
+  const direct = highResolutionXAvatarUrl(url);
+  const sources = [avatarProxyUrl(url), direct].filter(
+    (source, index, values): source is string => Boolean(source) && values.indexOf(source) === index,
+  );
+  for (const source of sources) {
+    try {
+      return await loadImage(source);
+    } catch {
+      // Fall back to the original X CDN URL if the proxy is temporarily unavailable.
+    }
+  }
+  return null;
 }
 
 function drawAvatarFallback(context: CanvasRenderingContext2D, data: ShareCardData) {
@@ -84,26 +104,20 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.fillText(data.globalRank ? `GLOBAL RANK #${data.globalRank}` : "OPEN MARKET", 1128, 171);
   context.textAlign = "left";
 
-  let avatarDrawn = false;
-  const proxy = avatarProxyUrl(data.avatarUrl);
-  if (proxy) {
-    try {
-      const image = await loadImage(proxy);
-      const scale = Math.max(590 / image.naturalWidth, 590 / image.naturalHeight);
-      const width = image.naturalWidth * scale;
-      const height = image.naturalHeight * scale;
-      context.save();
-      context.beginPath();
-      context.rect(72, 286, 590, 590);
-      context.clip();
-      context.drawImage(image, 72 + (590 - width) / 2, 286 + (590 - height) / 2, width, height);
-      context.restore();
-      avatarDrawn = true;
-    } catch {
-      avatarDrawn = false;
-    }
+  const avatar = await loadAvatar(data.avatarUrl);
+  if (avatar) {
+    const scale = Math.max(590 / avatar.naturalWidth, 590 / avatar.naturalHeight);
+    const width = avatar.naturalWidth * scale;
+    const height = avatar.naturalHeight * scale;
+    context.save();
+    context.beginPath();
+    context.rect(72, 286, 590, 590);
+    context.clip();
+    context.drawImage(avatar, 72 + (590 - width) / 2, 286 + (590 - height) / 2, width, height);
+    context.restore();
+  } else {
+    drawAvatarFallback(context, data);
   }
-  if (!avatarDrawn) drawAvatarFallback(context, data);
   context.strokeStyle = INK;
   context.lineWidth = 10;
   context.strokeRect(72, 286, 590, 590);
