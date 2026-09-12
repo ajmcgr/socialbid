@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowUpRight, Share2 } from "lucide-react";
@@ -330,7 +330,7 @@ export function MarketplaceLeaderboard({
 }) {
   const router = useRouter();
   const [realtimeEpoch, setRealtimeEpoch] = useState(0);
-  const [showAllUnowned, setShowAllUnowned] = useState(false);
+  const lastScrollKey = useRef<string | null>(null);
 
   useEffect(() => {
     const restartRealtime = () => setRealtimeEpoch((epoch) => epoch + 1);
@@ -338,8 +338,20 @@ export function MarketplaceLeaderboard({
     return () => window.removeEventListener("social-bid-recover", restartRealtime);
   }, []);
 
+  // When the page (or tab) changes, scroll back to the top of the rankings
+  // section rather than the very top of the site. Skipped on first render.
   useEffect(() => {
-    setShowAllUnowned(false);
+    const key = `${market.sort}:${page}`;
+    if (lastScrollKey.current === null) {
+      lastScrollKey.current = key;
+      return;
+    }
+    if (lastScrollKey.current !== key) {
+      lastScrollKey.current = key;
+      document
+        .getElementById("leaderboard-heading")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }, [market.sort, page]);
 
   useEffect(() => {
@@ -373,9 +385,6 @@ export function MarketplaceLeaderboard({
     ? visibleRows.slice(Math.max(0, market.rows.length - pageStart))
     : [];
   const showSeparateUnowned = visibleUnowned.length > 0;
-  const displayedUnowned =
-    showAllUnowned || visibleUnowned.length <= 10 ? visibleUnowned : visibleUnowned.slice(0, 10);
-  const canExpandUnowned = visibleUnowned.length > 10;
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-12 sm:px-5">
@@ -462,7 +471,7 @@ export function MarketplaceLeaderboard({
             </Link>
           </div>
           <div className="border-t-2 border-border">
-            {displayedUnowned.map((row, index) => (
+            {visibleUnowned.map((row, index) => (
               <LeaderboardRow
                 key={row.listing.id}
                 row={row}
@@ -470,28 +479,6 @@ export function MarketplaceLeaderboard({
               />
             ))}
           </div>
-          {canExpandUnowned ? (
-            <div className="mt-4 text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  if (showAllUnowned) {
-                    setShowAllUnowned(false);
-                    document
-                      .getElementById("unowned-heading")
-                      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                  } else {
-                    setShowAllUnowned(true);
-                  }
-                }}
-                className="text-sm font-bold text-foreground underline hover:no-underline"
-              >
-                {showAllUnowned
-                  ? "Show fewer ↑"
-                  : `Show all ${market.unowned.length.toLocaleString()} unsponsored profiles ↓`}
-              </button>
-            </div>
-          ) : null}
         </section>
       ) : null}
 
