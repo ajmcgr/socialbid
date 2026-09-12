@@ -56,7 +56,8 @@ export const Route = createFileRoute("/api/public/release-payouts")({
         const { runPayoutSetupReminderSweep } = await import("@/lib/payout-reminders.server");
         const payoutReminders = await runPayoutSetupReminderSweep();
         // Nudge creators who connected X but never made their profile live.
-        const { runListingActivationReminderSweep } = await import("@/lib/listing-reminders.server");
+        const { runListingActivationReminderSweep } =
+          await import("@/lib/listing-reminders.server");
         const listingReminders = await runListingActivationReminderSweep();
         return Response.json({
           activation,
