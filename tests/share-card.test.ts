@@ -28,13 +28,43 @@ describe("creator share card helpers", () => {
   test("uses market-entry copy before a sponsorship", () => {
     expect(shareCardState(base)).toBe("market-entry");
     const text = shareCardPostText(base);
-    expect(text).toContain("@alexmacgregor__ just entered the market.");
-    expect(text).toContain("Opening bid: $10.");
-    expect(text).toContain("Who wants the spot? 👀");
+    expect(text.startsWith("@")).toBe(false);
+    expect(text).toContain("@alexmacgregor__");
+    expect(text).toContain("$10");
     expect(text).toContain("https://socialbid.co/u/alex_macgregor");
     expect(text).not.toContain("Social Bid");
     expect(text).not.toContain("SocialBid");
     expect(text).not.toContain(base.displayName);
+  });
+
+  test("all market-entry templates avoid leading @ and include required data", () => {
+    for (const template of marketEntryTemplates) {
+      const text = template.render(base);
+      expect(text.startsWith("@")).toBe(false);
+      expect(text).toContain("@alexmacgregor__");
+      expect(text).toContain("$10");
+      expect(text).toContain("https://socialbid.co/u/alex_macgregor");
+      expect(text).toContain("\n\n");
+      expect(text).not.toContain("Social Bid");
+      expect(text).not.toContain("SocialBid");
+    }
+  });
+
+  test("random market-entry selection can produce different templates", () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 50; i++) {
+      seen.add(randomMarketEntryShareText(base));
+    }
+    expect(seen.size).toBeGreaterThan(1);
+    expect(seen.size).toBeLessThanOrEqual(marketEntryTemplates.length);
+  });
+
+  test("market-entry X intent URL is properly encoded", () => {
+    const text = marketEntryTemplates[0].render(base);
+    const url = `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
+    expect(url).toContain(encodeURIComponent("https://socialbid.co/u/alex_macgregor"));
+    expect(url).toContain(encodeURIComponent("@alexmacgregor__"));
+    expect(url.startsWith("https://x.com/intent/post?text=")).toBe(true);
   });
 
   test("uses sponsored copy only with a sponsor and current value", () => {
