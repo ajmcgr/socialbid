@@ -60,7 +60,7 @@ function truncateBio(bio: string, max: number): string {
  */
 function buildMarketEntryText(
   data: ShareCardData,
-  parts: (bioParagraph: string | null) => string[],
+  parts: (bioParagraph: string | null) => (string | null)[],
 ): string {
   const bio = cleanBioSnippet(data.bio);
   const render = (bioParagraph: string | null) =>
