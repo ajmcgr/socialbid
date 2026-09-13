@@ -23,11 +23,14 @@ export function shareCardFilename(username: string): string {
 }
 
 export function shareCardPostText(data: ShareCardData): string {
-  const handleTag = data.handle ? ` (@${data.handle})` : "";
-  const name = data.displayName;
-  return data.sponsorName && data.currentValueCents !== null
-    ? `${name}${handleTag} is sponsored on Social Bid.`
-    : `${name}${handleTag} just entered the market on Social Bid.`;
+  if (data.sponsorName && data.currentValueCents !== null) {
+    const handleTag = data.handle ? ` (@${data.handle})` : "";
+    return `${data.displayName}${handleTag} is sponsored on Social Bid.`;
+  }
+  const handle = data.handle ?? data.username;
+  const profileUrl = shareCardProfileUrl(data.username);
+  const openingBid = money(data.startingPriceCents);
+  return `@${handle} just entered the market.\n\nOpening bid: ${openingBid}.\n\nWho wants the spot? 👀\n\n${profileUrl}`;
 }
 
 export function shareCardState(data: ShareCardData): "sponsored" | "market-entry" {
