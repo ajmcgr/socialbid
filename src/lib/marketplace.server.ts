@@ -201,6 +201,7 @@ export async function loadMarketplace(sort: MarketplaceSort): Promise<Marketplac
         x_username: creator.x_username,
         x_profile_url: creator.x_profile_url,
         x_follower_count: creator.x_follower_count,
+        x_bio_snapshot: creator.x_bio_snapshot,
       },
       listing: {
         id: listing.id,

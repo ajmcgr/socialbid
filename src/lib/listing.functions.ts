@@ -31,6 +31,7 @@ export type ListingView = {
     x_username?: string | null;
     x_profile_url?: string | null;
     x_follower_count?: number | null;
+    x_bio_snapshot?: string | null;
   };
   listing: {
     id: string;

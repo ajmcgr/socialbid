@@ -10,6 +10,8 @@ export type CreatorSession = {
   handle: string | null;
   profileImageUrl: string | null;
   profileUrl: string | null;
+  /** The creator's stored X bio/description snapshot. */
+  bio: string | null;
   followers: number;
   accountVerified: boolean;
   bioVerified: boolean;
@@ -52,7 +54,7 @@ export const getCreatorSession = createServerFn({ method: "POST" })
     const { data: c } = await db
       .from("creators")
       .select(
-        "id, username, display_name, x_username, x_profile_image_url, x_profile_url, x_follower_count, x_account_verified, x_bio_verified, x_bio_verified_method, banned",
+        "id, username, display_name, x_username, x_profile_image_url, x_profile_url, x_follower_count, x_account_verified, x_bio_verified, x_bio_verified_method, x_bio_snapshot, banned",
       )
       .eq("session_token", token)
       .maybeSingle();
@@ -113,6 +115,7 @@ export const getCreatorSession = createServerFn({ method: "POST" })
       handle: c.x_username ?? null,
       profileImageUrl: c.x_profile_image_url ?? null,
       profileUrl: c.x_profile_url ?? null,
+      bio: (c.x_bio_snapshot as string | null) ?? null,
       followers: Number(c.x_follower_count ?? 0),
       accountVerified: Boolean(c.x_account_verified),
       bioVerified: Boolean(c.x_bio_verified),

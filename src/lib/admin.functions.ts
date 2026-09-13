@@ -62,6 +62,7 @@ export const getAdminData = createServerFn({ method: "POST" })
       displayName: row.creator.display_name,
       handle: row.creator.x_username ?? row.creator.social_handle,
       avatarUrl: row.creator.profile_image_url,
+      bio: row.creator.x_bio_snapshot ?? null,
       startingPriceCents: row.listing.starting_price_cents,
       currentValueCents: row.bioValueCents,
       globalRank: row.globalRank,

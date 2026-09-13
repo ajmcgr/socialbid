@@ -5,6 +5,8 @@ export type ShareCardData = {
   displayName: string;
   handle: string | null;
   avatarUrl: string | null;
+  /** The creator's stored X bio/description, already fetched at connect time. */
+  bio: string | null;
   startingPriceCents: number;
   currentValueCents: number | null;
   globalRank: number | null;
@@ -24,16 +26,87 @@ export function shareCardFilename(username: string): string {
   return `social-bid-${safe || "creator"}.png`;
 }
 
+/** X post character limit; we stay just under it for safety. */
+const X_POST_MAX_CHARS = 275;
+
+/**
+ * Cleans a stored X bio for use in a share post: trims whitespace, collapses
+ * line breaks into single spaces, and returns null when nothing is left.
+ * The bio text itself is preserved verbatim — never rewritten.
+ */
+export function cleanBioSnippet(bio: string | null | undefined): string | null {
+  if (!bio) return null;
+  const cleaned = bio.replace(/\s+/g, " ").trim();
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+/**
+ * Truncates a cleaned bio to `max` characters, cutting at a word boundary
+ * where possible and appending "…" when truncation occurs.
+ */
+function truncateBio(bio: string, max: number): string {
+  if (bio.length <= max) return bio;
+  if (max < 8) return `${bio.slice(0, Math.max(1, max - 1))}…`;
+  const slice = bio.slice(0, max - 1);
+  const lastSpace = slice.lastIndexOf(" ");
+  const cut = lastSpace >= Math.floor(max / 2) ? slice.slice(0, lastSpace) : slice;
+  return `${cut}…`;
+}
+
+/**
+ * Builds the share text for one template, shrinking only the bio paragraph
+ * when the full post would exceed X's character limit. The @username, opening
+ * bid, CTA and profile URL are never cut.
+ */
+function buildMarketEntryText(
+  data: ShareCardData,
+  parts: (bioParagraph: string | null) => (string | null)[],
+): string {
+  const bio = cleanBioSnippet(data.bio);
+  const render = (bioParagraph: string | null) =>
+    parts(bioParagraph)
+      .filter((part): part is string => Boolean(part))
+      .join("\n\n");
+  let text = render(bio);
+  if (bio && text.length > X_POST_MAX_CHARS) {
+    const withoutBio = render(null);
+    const allowance = X_POST_MAX_CHARS - withoutBio.length - 2; // "\n\n" separator
+    text = render(truncateBio(bio, Math.max(0, allowance)));
+  }
+  return text;
+}
+
 export const marketEntryTemplates: {
   id: string;
   render: (data: ShareCardData) => string;
 }[] = [
   {
+    id: "welcome",
+    render: (data) => {
+      const handle = data.handle ?? data.username;
+      const bid = money(data.startingPriceCents);
+      return buildMarketEntryText(data, (bio) => [
+        `Welcome @${handle} to SocialBid 🥳`,
+        bio,
+        `Opening bid: ${bid}.`,
+        `Who wants the spot? 👀`,
+        shareCardProfileUrl(data.username),
+      ]);
+    },
+  },
+  {
     id: "new-market-entry",
     render: (data) => {
       const handle = data.handle ?? data.username;
       const bid = money(data.startingPriceCents);
-      return `New market entry 👀\n\n@${handle} just entered the market.\n\nOpening bid: ${bid}.\n\nWho wants the spot?\n\n${shareCardProfileUrl(data.username)}`;
+      return buildMarketEntryText(data, (bio) => [
+        `New market entry 👀`,
+        `@${handle} just entered the market.`,
+        bio,
+        `Opening bid: ${bid}.`,
+        `Who wants the spot?`,
+        shareCardProfileUrl(data.username),
+      ]);
     },
   },
   {
@@ -41,7 +114,14 @@ export const marketEntryTemplates: {
     render: (data) => {
       const handle = data.handle ?? data.username;
       const bid = money(data.startingPriceCents);
-      return `Just listed 📈\n\n@${handle} is now on the market.\n\nOpening bid: ${bid}.\n\nWho's sponsoring them first?\n\n${shareCardProfileUrl(data.username)}`;
+      return buildMarketEntryText(data, (bio) => [
+        `Just listed 📈`,
+        `@${handle} is now on the market.`,
+        bio,
+        `Opening bid: ${bid}.`,
+        `Who's sponsoring them first?`,
+        shareCardProfileUrl(data.username),
+      ]);
     },
   },
   {
@@ -49,23 +129,29 @@ export const marketEntryTemplates: {
     render: (data) => {
       const handle = data.handle ?? data.username;
       const bid = money(data.startingPriceCents);
-      return `Another creator enters the market.\n\n@${handle} is currently unsponsored.\n\nOpening bid: ${bid}.\n\nWho's taking the spot? 👀\n\n${shareCardProfileUrl(data.username)}`;
-    },
-  },
-  {
-    id: "another-listing",
-    render: (data) => {
-      const handle = data.handle ?? data.username;
-      const bid = money(data.startingPriceCents);
-      return `The market just got another listing.\n\n@${handle}\n\nOpening bid: ${bid}.\n\nAny takers? 👀\n\n${shareCardProfileUrl(data.username)}`;
+      return buildMarketEntryText(data, (bio) => [
+        `Another creator enters the market.`,
+        `@${handle} is currently unsponsored.`,
+        bio,
+        `Opening bid: ${bid}.`,
+        `Who's taking the spot? 👀`,
+        shareCardProfileUrl(data.username),
+      ]);
     },
   },
   {
     id: "new-listing-dropped",
     render: (data) => {
       const handle = data.handle ?? data.username;
-      const bid = money(data.startingPriceCents).replace(/^\$/, "");
-      return `New listing just dropped.\n\n@${handle} has entered the market.\n\n$${bid} gets the first sponsorship spot.\n\nUntil someone outbids you.\n\n${shareCardProfileUrl(data.username)}`;
+      const bid = money(data.startingPriceCents);
+      return buildMarketEntryText(data, (bio) => [
+        `New listing just dropped.`,
+        `@${handle} has entered the market.`,
+        bio,
+        `${bid} gets the first sponsorship spot.`,
+        `Until someone outbids you.`,
+        shareCardProfileUrl(data.username),
+      ]);
     },
   },
 ];
