@@ -405,7 +405,7 @@ export function CreatorShareCard({
     setNotice("Profile link copied.");
   }, [data.username]);
 
-  const xUrl = `https://x.com/intent/post?text=${encodeURIComponent(shareCardPostText(data))}&url=${encodeURIComponent(shareCardProfileUrl(data.username))}`;
+  const xUrl = `https://x.com/intent/post?text=${encodeURIComponent(shareCardPostText(data))}`;
 
   return (
     <div className={compact ? "space-y-4" : "panel mt-4 p-4 sm:p-6"}>
