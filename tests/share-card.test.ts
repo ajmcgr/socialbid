@@ -25,8 +25,14 @@ const base: ShareCardData = {
 describe("creator share card helpers", () => {
   test("uses market-entry copy before a sponsorship", () => {
     expect(shareCardState(base)).toBe("market-entry");
-    expect(shareCardPostText(base)).toContain("entered the market");
-    expect(shareCardPostText(base).startsWith("@")).toBe(false);
+    const text = shareCardPostText(base);
+    expect(text).toContain("@alexmacgregor__ just entered the market.");
+    expect(text).toContain("Opening bid: $10.");
+    expect(text).toContain("Who wants the spot? 👀");
+    expect(text).toContain("https://socialbid.co/u/alex_macgregor");
+    expect(text).not.toContain("Social Bid");
+    expect(text).not.toContain("SocialBid");
+    expect(text).not.toContain(base.displayName);
   });
 
   test("uses sponsored copy only with a sponsor and current value", () => {
@@ -41,9 +47,7 @@ describe("creator share card helpers", () => {
     expect(shareCardFilename("Alex Name!")).toBe("social-bid-alex-name.png");
     expect(avatarProxyUrl(base.avatarUrl)).toContain("/api/public/share-avatar?src=");
     expect(avatarProxyUrl(null)).toBeNull();
-    expect(sponsorLogoProxyUrl("https://project.supabase.co/logo.png")).toContain(
-      "kind=sponsor",
-    );
+    expect(sponsorLogoProxyUrl("https://project.supabase.co/logo.png")).toContain("kind=sponsor");
   });
 
   test("requests a crisp X avatar instead of the small normal image", () => {

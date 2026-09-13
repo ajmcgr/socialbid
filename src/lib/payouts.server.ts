@@ -213,7 +213,6 @@ export async function releaseOne(payoutId: string): Promise<string> {
     .maybeSingle();
   if (ownershipError) return block(payoutId, `ownership_read_failed: ${ownershipError.message}`);
 
-
   const now = new Date().toISOString();
 
   // Website-only sponsorships are fulfilled on socialbid.co at purchase time.
