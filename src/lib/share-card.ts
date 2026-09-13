@@ -1,3 +1,5 @@
+import { money } from "./format";
+
 export type ShareCardData = {
   username: string;
   displayName: string;
