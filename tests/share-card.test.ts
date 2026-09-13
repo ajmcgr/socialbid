@@ -26,12 +26,14 @@ describe("creator share card helpers", () => {
   test("uses market-entry copy before a sponsorship", () => {
     expect(shareCardState(base)).toBe("market-entry");
     expect(shareCardPostText(base)).toContain("entered the market");
+    expect(shareCardPostText(base).startsWith("@")).toBe(false);
   });
 
   test("uses sponsored copy only with a sponsor and current value", () => {
     const sponsored = { ...base, sponsorName: "Acme", currentValueCents: 2500 };
     expect(shareCardState(sponsored)).toBe("sponsored");
     expect(shareCardPostText(sponsored)).toContain("sponsored on Social Bid");
+    expect(shareCardPostText(sponsored).startsWith("@")).toBe(false);
   });
 
   test("creates safe profile, filename, and avatar URLs", () => {
