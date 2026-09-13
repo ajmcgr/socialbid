@@ -406,7 +406,15 @@ export function CreatorShareCard({
     setNotice("Profile link copied.");
   }, [data.username]);
 
-  const xUrl = `https://x.com/intent/post?text=${encodeURIComponent(shareCardPostText(data))}`;
+  const isMarketEntry = shareCardState(data) === "market-entry";
+
+  const sponsoredXUrl = `https://x.com/intent/post?text=${encodeURIComponent(shareCardPostText(data))}`;
+
+  const openX = useCallback(() => {
+    const text = isMarketEntry ? randomMarketEntryShareText(data) : shareCardPostText(data);
+    const url = `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }, [data, isMarketEntry]);
 
   return (
     <div className={compact ? "space-y-4" : "panel mt-4 p-4 sm:p-6"}>
@@ -431,11 +439,17 @@ export function CreatorShareCard({
             <LinkIcon /> Copy profile link
           </Button>
         ) : null}
-        <Button asChild>
-          <a href={xUrl} target="_blank" rel="noreferrer">
+        {isMarketEntry ? (
+          <Button onClick={openX}>
             <ExternalLink /> {compact ? "Open on X" : "Share on X"}
-          </a>
-        </Button>
+          </Button>
+        ) : (
+          <Button asChild>
+            <a href={sponsoredXUrl} target="_blank" rel="noreferrer">
+              <ExternalLink /> {compact ? "Open on X" : "Share on X"}
+            </a>
+          </Button>
+        )}
       </div>
       {notice ? (
         <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground" role="status">
