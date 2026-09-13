@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
   avatarProxyUrl,
   highResolutionXAvatarUrl,
+  marketEntryTemplates,
+  randomMarketEntryShareText,
   shareCardFilename,
   shareCardPostText,
   shareCardProfileUrl,
