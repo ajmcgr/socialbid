@@ -25,8 +25,14 @@ const base: ShareCardData = {
 describe("creator share card helpers", () => {
   test("uses market-entry copy before a sponsorship", () => {
     expect(shareCardState(base)).toBe("market-entry");
-    expect(shareCardPostText(base)).toContain("entered the market");
-    expect(shareCardPostText(base).startsWith("@")).toBe(false);
+    const text = shareCardPostText(base);
+    expect(text).toContain("@alexmacgregor__ just entered the market.");
+    expect(text).toContain("Opening bid: $10.");
+    expect(text).toContain("Who wants the spot? 👀");
+    expect(text).toContain("https://socialbid.co/u/alex_macgregor");
+    expect(text).not.toContain("Social Bid");
+    expect(text).not.toContain("SocialBid");
+    expect(text).not.toContain(base.displayName);
   });
 
   test("uses sponsored copy only with a sponsor and current value", () => {
