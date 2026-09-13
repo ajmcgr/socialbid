@@ -69,7 +69,9 @@ describe("creator share card helpers", () => {
 
   test("templates retain five distinct variations after the shared bio hook", () => {
     const postsWithoutBio = new Set(
-      marketEntryTemplates.map((template) => template.render(base).split("\n\n").slice(1).join("\n\n")),
+      marketEntryTemplates.map((template) =>
+        template.render(base).split("\n\n").slice(1).join("\n\n"),
+      ),
     );
     expect(postsWithoutBio.size).toBe(5);
   });

@@ -63,8 +63,7 @@ function buildMarketEntryText(
   parts: (bioParagraph: string | null) => string[],
 ): string {
   const bio = cleanBioSnippet(data.bio);
-  const render = (bioParagraph: string | null) =>
-    parts(bioParagraph).join("\n\n");
+  const render = (bioParagraph: string | null) => parts(bioParagraph).join("\n\n");
   let text = render(bio);
   if (bio && text.length > X_POST_MAX_CHARS) {
     const withoutBio = render(null);
@@ -139,7 +138,7 @@ export const marketEntryTemplates: {
         : "Who wants the spot? 👀";
       return buildMarketEntryText(data, (bio) => [
         ...(bio ? [bio] : ["Another creator enters the market."]),
-        `@${handle} just entered the market.`,
+        `@${handle} is up for sponsorship.`,
         `Opening bid: ${bid}.`,
         cta,
         shareCardProfileUrl(data.username),
