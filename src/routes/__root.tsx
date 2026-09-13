@@ -419,9 +419,11 @@ function SiteFooter() {
           >
             Jonathan
           </a>
-          . <span className="text-muted-foreground/80">Social Bid is not affiliated with or endorsed by X.</span>
+          .{" "}
+          <span className="text-muted-foreground/80">
+            Social Bid is not affiliated with or endorsed by X.
+          </span>
         </span>
-
       </div>
     </footer>
   );

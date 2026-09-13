@@ -212,9 +212,9 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.clip();
   const avatar = await loadAvatar(data.avatarUrl);
   let portraitX = px;
-  let portraitY = py;
+  const portraitY = py;
   let portraitW = pw;
-  let portraitH = ph;
+  const portraitH = ph;
   if (avatar) {
     portraitW = ph * 0.86;
     portraitX = px + (pw - portraitW) / 2;
@@ -231,7 +231,6 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.lineCap = "butt";
   context.strokeRect(portraitX, portraitY, portraitW, portraitH);
   context.lineWidth = 4;
-
 
   // Sponsor badge floating over the portrait.
   const badgeW = 420;
@@ -311,7 +310,7 @@ async function drawCard(canvas: HTMLCanvasElement, data: ShareCardData) {
   context.fillStyle = INK;
   context.font = `800 34px ${DISPLAY}`;
   const footAmount = money(
-    sponsored ? data.currentValueCents ?? data.startingPriceCents : data.startingPriceCents,
+    sponsored ? (data.currentValueCents ?? data.startingPriceCents) : data.startingPriceCents,
   );
   context.fillText(sponsored ? footAmount : `OPENING ${footAmount}`, SIZE / 2, footY);
   context.textAlign = "right";

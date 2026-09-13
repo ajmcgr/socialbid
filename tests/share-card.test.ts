@@ -47,9 +47,7 @@ describe("creator share card helpers", () => {
     expect(shareCardFilename("Alex Name!")).toBe("social-bid-alex-name.png");
     expect(avatarProxyUrl(base.avatarUrl)).toContain("/api/public/share-avatar?src=");
     expect(avatarProxyUrl(null)).toBeNull();
-    expect(sponsorLogoProxyUrl("https://project.supabase.co/logo.png")).toContain(
-      "kind=sponsor",
-    );
+    expect(sponsorLogoProxyUrl("https://project.supabase.co/logo.png")).toContain("kind=sponsor");
   });
 
   test("requests a crisp X avatar instead of the small normal image", () => {
