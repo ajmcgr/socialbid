@@ -23,10 +23,11 @@ export function shareCardFilename(username: string): string {
 }
 
 export function shareCardPostText(data: ShareCardData): string {
-  const handle = data.handle ? `@${data.handle}` : data.displayName;
+  const handleTag = data.handle ? ` (@${data.handle})` : "";
+  const name = data.displayName;
   return data.sponsorName && data.currentValueCents !== null
-    ? `${handle} is sponsored on Social Bid.`
-    : `${handle} just entered the market on Social Bid.`;
+    ? `${name}${handleTag} is sponsored on Social Bid.`
+    : `${name}${handleTag} just entered the market on Social Bid.`;
 }
 
 export function shareCardState(data: ShareCardData): "sponsored" | "market-entry" {
