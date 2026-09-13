@@ -5,6 +5,8 @@ export type ShareCardData = {
   displayName: string;
   handle: string | null;
   avatarUrl: string | null;
+  /** The creator's stored X bio/description, already fetched at connect time. */
+  bio: string | null;
   startingPriceCents: number;
   currentValueCents: number | null;
   globalRank: number | null;
