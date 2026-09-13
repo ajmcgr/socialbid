@@ -28,6 +28,10 @@ const base: ShareCardData = {
 
 const X_LIMIT = 280;
 
+function firstParagraph(text: string): string {
+  return text.split("\n\n")[0] ?? "";
+}
+
 describe("creator share card helpers", () => {
   test("uses market-entry copy before a sponsorship", () => {
     expect(shareCardState(base)).toBe("market-entry");
@@ -39,9 +43,10 @@ describe("creator share card helpers", () => {
     expect(text).toContain("https://socialbid.co/u/alex_macgregor");
   });
 
-  test("all market-entry templates include bio, bid, CTA and URL, never lead with @", () => {
+  test("all five templates lead with the unchanged bio and include required dynamic data", () => {
     for (const template of marketEntryTemplates) {
       const text = template.render(base);
+      expect(firstParagraph(text)).toBe(base.bio);
       expect(text.startsWith("@")).toBe(false);
       expect(text).toContain("@alexmacgregor__");
       expect(text).toContain("Builder of internet markets. Founder at Social Bid.");
@@ -52,18 +57,23 @@ describe("creator share card helpers", () => {
     }
   });
 
-  test("welcome template starts with Welcome and uses SocialBid branding", () => {
+  test("first variation uses the bio before its market-entry language", () => {
     const welcome = marketEntryTemplates.find((t) => t.id === "welcome");
     expect(welcome).toBeDefined();
-    const text = welcome!.render(base);
-    expect(text.startsWith("Welcome @alexmacgregor__ to SocialBid 🥳")).toBe(true);
+    if (!welcome) throw new Error("Welcome template is missing");
+    const text = welcome.render(base);
+    expect(text.startsWith(`${base.bio}\n\n@alexmacgregor__ just entered the market.`)).toBe(true);
     expect(text).toContain("Opening bid: $10.");
     expect(text).toContain("Who wants the spot? 👀");
   });
 
-  test("templates render five distinct openings", () => {
-    const openings = new Set(marketEntryTemplates.map((t) => t.render(base).split("\n")[0]));
-    expect(openings.size).toBe(5);
+  test("templates retain five distinct variations after the shared bio hook", () => {
+    const postsWithoutBio = new Set(
+      marketEntryTemplates.map((template) =>
+        template.render(base).split("\n\n").slice(1).join("\n\n"),
+      ),
+    );
+    expect(postsWithoutBio.size).toBe(5);
   });
 
   test("long bios are truncated with an ellipsis and the post stays within the limit", () => {
@@ -73,6 +83,7 @@ describe("creator share card helpers", () => {
       expect(text.length).toBeLessThanOrEqual(X_LIMIT);
       expect(text).toContain("…");
       expect(text.startsWith("@")).toBe(false);
+      expect(firstParagraph(text).endsWith("…")).toBe(true);
       // Critical content is never cut.
       expect(text).toContain("@alexmacgregor__");
       expect(text).toContain("$10");
@@ -81,20 +92,28 @@ describe("creator share card helpers", () => {
   });
 
   test("multiline bios collapse into a single paragraph", () => {
-    const text = marketEntryTemplates[0]!.render({
+    const template = marketEntryTemplates[0];
+    if (!template) throw new Error("Market Entry template is missing");
+    const text = template.render({
       ...base,
       bio: "  Line one.\n\nLine two.\n   Line three.  ",
     });
-    expect(text).toContain("Line one. Line two. Line three.");
+    expect(firstParagraph(text)).toBe("Line one. Line two. Line three.");
     expect(text).not.toContain("Line one.\n");
   });
 
-  test("emoji in bios are preserved", () => {
-    const text = marketEntryTemplates[0]!.render({
-      ...base,
-      bio: "16 y/o dev 🚀 shipping daily 🔥",
-    });
-    expect(text).toContain("16 y/o dev 🚀 shipping daily 🔥");
+  test("short, emoji, @mention and URL bios remain verbatim", () => {
+    const bios = [
+      "Builder.",
+      "16 y/o dev 🚀 shipping daily 🔥",
+      "Building with @friend every day.",
+      "Notes at https://example.com/about",
+    ];
+    for (const bio of bios) {
+      for (const template of marketEntryTemplates) {
+        expect(firstParagraph(template.render({ ...base, bio }))).toBe(bio);
+      }
+    }
   });
 
   test("missing bio is omitted gracefully with no blank paragraph", () => {
@@ -105,10 +124,27 @@ describe("creator share card helpers", () => {
         expect(text).not.toContain("undefined");
         expect(text).not.toContain("null");
         expect(text).not.toMatch(/\n\n\n/);
+        expect(firstParagraph(text).length).toBeGreaterThan(0);
         expect(text).toContain("@alexmacgregor__");
         expect(text).toContain("$10");
         expect(text).toContain("https://socialbid.co/u/alex_macgregor");
       }
+    }
+  });
+
+  test("rank variation uses a reliable rank and falls back when unavailable", () => {
+    const ranked = marketEntryTemplates.find((t) => t.id === "another-creator-enters");
+    expect(ranked).toBeDefined();
+    if (!ranked) throw new Error("Rank template is missing");
+    expect(ranked.render({ ...base, globalRank: 50 })).toContain(
+      "Who's taking the #50 creator spot? 👀",
+    );
+    expect(ranked.render({ ...base, globalRank: null })).toContain("Who wants the spot? 👀");
+  });
+
+  test("opening bid remains dynamic in every variation", () => {
+    for (const template of marketEntryTemplates) {
+      expect(template.render({ ...base, startingPriceCents: 2750 })).toContain("$27.50");
     }
   });
 
@@ -138,7 +174,9 @@ describe("creator share card helpers", () => {
   });
 
   test("market-entry X intent URL is properly encoded", () => {
-    const text = marketEntryTemplates[0]!.render(base);
+    const template = marketEntryTemplates[0];
+    if (!template) throw new Error("Market Entry template is missing");
+    const text = template.render(base);
     const url = `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
     expect(url).toContain(encodeURIComponent("https://socialbid.co/u/alex_macgregor"));
     expect(url).toContain(encodeURIComponent("@alexmacgregor__"));
