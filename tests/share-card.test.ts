@@ -90,7 +90,10 @@ describe("creator share card helpers", () => {
   });
 
   test("emoji in bios are preserved", () => {
-    const text = marketEntryTemplates[0]!.render({ ...base, bio: "16 y/o dev 🚀 shipping daily 🔥" });
+    const text = marketEntryTemplates[0]!.render({
+      ...base,
+      bio: "16 y/o dev 🚀 shipping daily 🔥",
+    });
     expect(text).toContain("16 y/o dev 🚀 shipping daily 🔥");
   });
 
