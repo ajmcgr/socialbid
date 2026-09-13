@@ -60,13 +60,11 @@ function truncateBio(bio: string, max: number): string {
  */
 function buildMarketEntryText(
   data: ShareCardData,
-  parts: (bioParagraph: string | null) => (string | null)[],
+  parts: (bioParagraph: string | null) => string[],
 ): string {
   const bio = cleanBioSnippet(data.bio);
   const render = (bioParagraph: string | null) =>
-    parts(bioParagraph)
-      .filter((part): part is string => Boolean(part))
-      .join("\n\n");
+    parts(bioParagraph).join("\n\n");
   let text = render(bio);
   if (bio && text.length > X_POST_MAX_CHARS) {
     const withoutBio = render(null);
@@ -85,13 +83,22 @@ export const marketEntryTemplates: {
     render: (data) => {
       const handle = data.handle ?? data.username;
       const bid = money(data.startingPriceCents);
-      return buildMarketEntryText(data, (bio) => [
-        `Welcome @${handle} to SocialBid 🥳`,
-        bio,
-        `Opening bid: ${bid}.`,
-        `Who wants the spot? 👀`,
-        shareCardProfileUrl(data.username),
-      ]);
+      return buildMarketEntryText(data, (bio) =>
+        bio
+          ? [
+              bio,
+              `@${handle} just entered the market.`,
+              `Opening bid: ${bid}.`,
+              `Who wants the spot? 👀`,
+              shareCardProfileUrl(data.username),
+            ]
+          : [
+              `Welcome @${handle} to SocialBid 🥳`,
+              `Opening bid: ${bid}.`,
+              `Who wants the spot? 👀`,
+              shareCardProfileUrl(data.username),
+            ],
+      );
     },
   },
   {
@@ -100,11 +107,10 @@ export const marketEntryTemplates: {
       const handle = data.handle ?? data.username;
       const bid = money(data.startingPriceCents);
       return buildMarketEntryText(data, (bio) => [
-        `New market entry 👀`,
-        `@${handle} just entered the market.`,
-        bio,
+        ...(bio ? [bio] : ["New market entry 👀"]),
+        `@${handle} is now listed on SocialBid.`,
         `Opening bid: ${bid}.`,
-        `Who wants the spot?`,
+        `Who's sponsoring them first?`,
         shareCardProfileUrl(data.username),
       ]);
     },
@@ -115,11 +121,10 @@ export const marketEntryTemplates: {
       const handle = data.handle ?? data.username;
       const bid = money(data.startingPriceCents);
       return buildMarketEntryText(data, (bio) => [
-        `Just listed 📈`,
-        `@${handle} is now on the market.`,
-        bio,
+        ...(bio ? [bio] : ["Just listed 📈"]),
+        `@${handle} is currently unsponsored.`,
         `Opening bid: ${bid}.`,
-        `Who's sponsoring them first?`,
+        `Who's taking the spot? 👀`,
         shareCardProfileUrl(data.username),
       ]);
     },
@@ -129,12 +134,14 @@ export const marketEntryTemplates: {
     render: (data) => {
       const handle = data.handle ?? data.username;
       const bid = money(data.startingPriceCents);
+      const cta = data.globalRank
+        ? `Who's taking the #${data.globalRank} creator spot? 👀`
+        : "Who wants the spot? 👀";
       return buildMarketEntryText(data, (bio) => [
-        `Another creator enters the market.`,
-        `@${handle} is currently unsponsored.`,
-        bio,
+        ...(bio ? [bio] : ["Another creator enters the market."]),
+        `@${handle} just entered the market.`,
         `Opening bid: ${bid}.`,
-        `Who's taking the spot? 👀`,
+        cta,
         shareCardProfileUrl(data.username),
       ]);
     },
@@ -145,9 +152,8 @@ export const marketEntryTemplates: {
       const handle = data.handle ?? data.username;
       const bid = money(data.startingPriceCents);
       return buildMarketEntryText(data, (bio) => [
-        `New listing just dropped.`,
+        ...(bio ? [bio] : ["New listing just dropped."]),
         `@${handle} has entered the market.`,
-        bio,
         `${bid} gets the first sponsorship spot.`,
         `Until someone outbids you.`,
         shareCardProfileUrl(data.username),
