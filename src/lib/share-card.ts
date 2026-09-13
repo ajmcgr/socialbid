@@ -72,7 +72,11 @@ export const marketEntryTemplates: {
 
 export function randomMarketEntryShareText(data: ShareCardData): string {
   const index = Math.floor(Math.random() * marketEntryTemplates.length);
-  const text = marketEntryTemplates[index].render(data);
+  const template = marketEntryTemplates[index];
+  if (!template) {
+    throw new Error(`Invalid market entry template index ${index}`);
+  }
+  const text = template.render(data);
   if (text.startsWith("@")) {
     throw new Error("Market entry share text must not start with @username");
   }
@@ -84,7 +88,11 @@ export function shareCardPostText(data: ShareCardData): string {
     const handleTag = data.handle ? ` (@${data.handle})` : "";
     return `${data.displayName}${handleTag} is sponsored on Social Bid.`;
   }
-  return marketEntryTemplates[0].render(data);
+  const template = marketEntryTemplates[0];
+  if (!template) {
+    throw new Error("No market entry templates configured");
+  }
+  return template.render(data);
 }
 
 export function shareCardState(data: ShareCardData): "sponsored" | "market-entry" {
