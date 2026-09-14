@@ -11,8 +11,8 @@ export const Route = createFileRoute("/u/$username")({
   head: ({ loaderData }) => {
     const name = loaderData?.creator.display_name ?? "this creator";
     const handle = loaderData?.creator.social_handle ?? loaderData?.creator.username ?? "";
-    const title = `Sponsor @${handle} — Social Bid`;
-    const description = `Sponsor ${name} on Social Bid. Your message and link stay on their profile until somebody pays more.`;
+    const title = `Sponsor @${handle} — SocialBid`;
+    const description = `Sponsor ${name} on SocialBid. Your message and link stay on their profile until somebody pays more.`;
     return {
       meta: [
         { title },

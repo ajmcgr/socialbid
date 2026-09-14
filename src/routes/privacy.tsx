@@ -3,12 +3,12 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy — Social Bid" },
+      { title: "Privacy Policy — SocialBid" },
       {
         name: "description",
-        content: "What Social Bid collects, why, and how click tracking works.",
+        content: "What SocialBid collects, why, and how click tracking works.",
       },
-      { property: "og:title", content: "Privacy Policy — Social Bid" },
+      { property: "og:title", content: "Privacy Policy — SocialBid" },
       { property: "og:description", content: "What we collect and how click tracking works." },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary" },

@@ -5,9 +5,9 @@ import { getSupabase } from "@/integrations/supabase/browser";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign In — Social Bid" },
-      { name: "description", content: "Sign in to manage your Social Bid profile." },
-      { property: "og:title", content: "Sign In — Social Bid" },
+      { title: "Sign In — SocialBid" },
+      { name: "description", content: "Sign in to manage your SocialBid profile." },
+      { property: "og:title", content: "Sign In — SocialBid" },
       { property: "og:description", content: "Sign in to manage your profile." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -41,7 +41,7 @@ function Auth() {
       setBusy(false);
       setMsg(
         result.ok
-          ? "A new Social Bid password email is on its way. Use the newest email only."
+          ? "A new SocialBid password email is on its way. Use the newest email only."
           : "We couldn't send the password email. Please try again in a moment.",
       );
       return;
@@ -90,7 +90,7 @@ function Auth() {
         )}
         {msg && (
           <p
-            className={`text-sm font-medium ${msg.startsWith("Check your email") || msg.startsWith("A new Social Bid") ? "" : "text-destructive"}`}
+            className={`text-sm font-medium ${msg.startsWith("Check your email") || msg.startsWith("A new SocialBid") ? "" : "text-destructive"}`}
           >
             {msg}
           </p>

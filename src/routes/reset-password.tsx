@@ -5,9 +5,9 @@ import { getSupabase } from "@/integrations/supabase/browser";
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Set Password — Social Bid" },
-      { name: "description", content: "Set a new password for your Social Bid account." },
-      { property: "og:title", content: "Set Password — Social Bid" },
+      { title: "Set Password — SocialBid" },
+      { name: "description", content: "Set a new password for your SocialBid account." },
+      { property: "og:title", content: "Set Password — SocialBid" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },

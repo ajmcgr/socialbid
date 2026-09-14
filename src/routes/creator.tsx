@@ -30,15 +30,15 @@ import { money } from "@/lib/format";
 export const Route = createFileRoute("/creator")({
   head: () => ({
     meta: [
-      { title: "Add Your Profile — Social Bid" },
+      { title: "Add Your Profile — SocialBid" },
       {
         name: "description",
-        content: "Connect X, add your profile, and let anyone sponsor you on Social Bid.",
+        content: "Connect X, add your profile, and let anyone sponsor you on SocialBid.",
       },
-      { property: "og:title", content: "Add Your Profile — Social Bid" },
+      { property: "og:title", content: "Add Your Profile — SocialBid" },
       {
         property: "og:description",
-        content: "Connect X to confirm your identity, then add your profile to Social Bid.",
+        content: "Connect X to confirm your identity, then add your profile to SocialBid.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -130,7 +130,7 @@ function CreatorPage() {
     setPublishError(null);
     void trackEvent({ data: { name: "enter_market_clicked" } }).catch(() => undefined);
     const res = await publishListing({ data: {} }).catch(() => ({
-      error: "We couldn't reach Social Bid. Check your connection and try again.",
+      error: "We couldn't reach SocialBid. Check your connection and try again.",
     }));
     setBusy(false);
     if ("error" in res) {
@@ -138,7 +138,7 @@ function CreatorPage() {
       return;
     }
     void trackEvent({ data: { name: "listing_published" } }).catch(() => undefined);
-    setMessage("You're in the market — your profile is live on Social Bid.");
+    setMessage("You're in the market — your profile is live on SocialBid.");
     const next = await getCreatorSession({ data: {} });
     setSession(next);
     setShowShareDialog(true);
@@ -151,8 +151,8 @@ function CreatorPage() {
     const obligationWarning =
       "Disconnecting X will remove your profile from public rankings and stop it from accepting new sponsors. It does not cancel any current sponsorship or pending payout obligations.";
     const warn = deleteData
-      ? "Disconnect X and delete your Social Bid data? This can't be undone."
-      : "Disconnect X from Social Bid?";
+      ? "Disconnect X and delete your SocialBid data? This can't be undone."
+      : "Disconnect X from SocialBid?";
     if (!window.confirm(obligation ? `${obligationWarning}\n\n${warn}` : warn)) return;
     setBusy(true);
     setMessage(null);
@@ -196,7 +196,7 @@ function CreatorPage() {
         {session ? "Profile" : "Add your profile"}
       </h1>
       <p className="mt-4 text-muted-foreground">
-        Connect X to confirm your identity, then add your profile to Social Bid.
+        Connect X to confirm your identity, then add your profile to SocialBid.
       </p>
 
       {message ? <div className="panel mt-6 px-4 py-3 text-sm font-medium">{message}</div> : null}
@@ -209,7 +209,7 @@ function CreatorPage() {
           <h2 className="mt-1 text-xl font-semibold">Connect X to confirm your identity</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Your connection confirms your identity and imports your public profile. Sponsorships
-            appear on Social Bid.
+            appear on SocialBid.
           </p>
           <a href="/api/public/x-start" className="btn-ink btn-ink-hover mt-6">
             Connect X
@@ -288,7 +288,7 @@ function CreatorPage() {
                   Your profile isn't public until you enter the market.
                 </p>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Nothing changes on X — sponsorships only appear on Social Bid, and you keep 80% of
+                  Nothing changes on X — sponsorships only appear on SocialBid, and you keep 80% of
                   every sponsorship.
                 </p>
               </div>
@@ -372,7 +372,7 @@ function CreatorPage() {
               {session.globalRank && session.bioValueCents !== null ? (
                 <a
                   href={`https://x.com/intent/post?text=${encodeURIComponent(
-                    `My sponsorship on Social Bid is now worth ${money(session.bioValueCents)}.\n\nCurrently #${session.globalRank}.`,
+                    `My sponsorship on SocialBid is now worth ${money(session.bioValueCents)}.\n\nCurrently #${session.globalRank}.`,
                   )}&url=${encodeURIComponent(`https://socialbid.co/u/${session.username}`)}`}
                   target="_blank"
                   rel="noreferrer"
@@ -416,7 +416,7 @@ function CreatorPage() {
                 <DialogHeader>
                   <DialogTitle>Your profile is live!</DialogTitle>
                   <DialogDescription>
-                    Share your announcement card to help sponsors find you on Social Bid.
+                    Share your announcement card to help sponsors find you on SocialBid.
                   </DialogDescription>
                 </DialogHeader>
                 <CreatorShareCard
@@ -445,9 +445,9 @@ function CreatorPage() {
 
           {session.ownerMessage ? (
             <div className="panel mt-8 p-6">
-              <div className="label-xs">Sponsored on Social Bid</div>
+              <div className="label-xs">Sponsored on SocialBid</div>
               <h2 className="mt-1 text-xl font-semibold">
-                Your sponsored slot is live on Social Bid
+                Your sponsored slot is live on SocialBid
               </h2>
               <div className="mt-4 inline-block border-2 border-border bg-accent px-3 py-2 font-mono text-sm font-bold text-accent-foreground">
                 {session.ownerPlacement ??
@@ -517,7 +517,7 @@ function errorCopy(code: string): string {
     case "x_callback_error":
       return "X returned an error during sign-in. Please try again.";
     case "x_already_connected":
-      return "That X profile is already connected to another Social Bid creator.";
+      return "That X profile is already connected to another SocialBid creator.";
     case "missing_code":
       return "That sign-in didn't complete. Please connect again.";
     case "creator_create_failed":
@@ -579,7 +579,7 @@ function PayoutsPanel({ status, onChange }: { status: PayoutStatus | null; onCha
       <div className="label-xs">Step 3</div>
       <h2 className="mt-1 text-xl font-extrabold">Get paid</h2>
       <p className="mt-2 text-sm text-muted-foreground">
-        Buyers pay Social Bid. We hold your share for 7 days, then transfer it to your bank via
+        Buyers pay SocialBid. We hold your share for 7 days, then transfer it to your bank via
         Stripe.
       </p>
 

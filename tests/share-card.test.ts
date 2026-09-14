@@ -193,7 +193,7 @@ describe("creator share card helpers", () => {
   test("uses sponsored copy only with a sponsor and current value", () => {
     const sponsored = { ...base, sponsorName: "Acme", currentValueCents: 2500 };
     expect(shareCardState(sponsored)).toBe("sponsored");
-    expect(shareCardPostText(sponsored)).toContain("sponsored on Social Bid");
+    expect(shareCardPostText(sponsored)).toContain("sponsored on SocialBid");
     expect(shareCardPostText(sponsored).startsWith("@")).toBe(false);
   });
 

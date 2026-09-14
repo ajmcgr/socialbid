@@ -2,7 +2,7 @@ import { SPONSOR_PREFIX } from "./placement";
 import { baseUrl } from "./db.server";
 import { isDeliverableEmail } from "./validate";
 
-const FROM = "Social Bid <alex@socialbid.co>";
+const FROM = "SocialBid <alex@socialbid.co>";
 // Use the actual PNG artwork with its white canvas. The similarly named
 // `social-bid-logo.png` is a transparent WebP file, which some email clients
 // composite against a dark surface.
@@ -70,12 +70,12 @@ const money = (c: number) => `$${(c / 100).toFixed(c % 100 === 0 ? 0 : 2)}`;
 
 function shell(
   body: string,
-  footNote = "You received this because you sponsored a creator on Social Bid.",
+  footNote = "You received this because you sponsored a creator on SocialBid.",
 ) {
   return `<div style="background:#f6f7f9;padding:40px 16px;font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e6e8eb;border-radius:4px">
     <tr><td align="center" bgcolor="#ffffff" style="background:#ffffff;padding:36px 32px;border-bottom:1px solid #e6e8eb">
-      <img src="${LOGO_URL}" alt="Social Bid" width="180" height="67" style="display:block;width:180px;height:67px;max-width:100%;border:0;outline:none;text-decoration:none" />
+      <img src="${LOGO_URL}" alt="SocialBid" width="180" height="67" style="display:block;width:180px;height:67px;max-width:100%;border:0;outline:none;text-decoration:none" />
     </td></tr>
     <tr><td style="padding:40px 40px 44px;color:#1c1f23;font-size:17px;line-height:1.6">
       ${body}
@@ -144,12 +144,12 @@ export async function sendContactEmail(o: {
   ] as Array<[string, string]>;
   return send(
     "alex@socialbid.co",
-    `Social Bid contact: ${subject}`,
+    `SocialBid contact: ${subject}`,
     shell(
       `${h1("New contact enquiry")}${facts(
         content.map(([label, value]) => [label, escapeHtml(value)]),
       )}<p style="margin:0;color:#3c4149;font-size:17px;line-height:1.6;white-space:pre-wrap">${escapeHtml(o.message)}</p>`,
-      "This message was sent from the Social Bid contact form.",
+      "This message was sent from the SocialBid contact form.",
     ),
     { idempotencyKey: o.idempotencyKey, replyTo: o.email, throwOnFailure: true },
   );
@@ -180,14 +180,14 @@ export async function sendWinnerEmail(o: {
   const link = `${baseUrl()}/u/${o.username}`;
   const share = `${baseUrl()}/own/${o.ownershipId}`;
   const tweet = `https://x.com/intent/post?text=${encodeURIComponent(
-    `I just sponsored @${o.handle} on Social Bid for ${money(o.amountCents)}.`,
+    `I just sponsored @${o.handle} on SocialBid for ${money(o.amountCents)}.`,
   )}&url=${encodeURIComponent(share)}`;
   return send(
     o.to,
-    o.globalRank === 1 ? `You hold the #1 sponsorship on Social Bid.` : `You sponsor @${o.handle}.`,
+    o.globalRank === 1 ? `You hold the #1 sponsorship on SocialBid.` : `You sponsor @${o.handle}.`,
     shell(`
       ${h1(o.globalRank === 1 ? "You hold the #1 sponsorship." : "Your sponsorship is live \u{1F389}")}
-      ${p(`Your payment went through — <b>${o.company}</b> now sponsors <b>@${o.handle}</b> on Social Bid, and the spot stays yours until somebody pays more.`)}
+      ${p(`Your payment went through — <b>${o.company}</b> now sponsors <b>@${o.handle}</b> on SocialBid, and the spot stays yours until somebody pays more.`)}
       ${facts([
         ["You paid", money(o.amountCents)],
         ...(o.globalRank
@@ -228,7 +228,7 @@ export async function sendOutbidEmail(o: {
       ${p(
         o.lostNumberOne
           ? `<b>${o.newOwner ?? "Someone"}</b> just took the #1 sponsorship for @${o.handle} at ${money(o.takeoverAmountCents ?? 0)}. You can take #1 back at any time.`
-          : `Your sponsor spot on <b>@${o.handle}</b>'s Social Bid profile was just taken. You can take it back at the new price at any time.`,
+          : `Your sponsor spot on <b>@${o.handle}</b>'s SocialBid profile was just taken. You can take it back at the new price at any time.`,
       )}
       ${facts([
         ["You paid", money(o.paidCents)],
@@ -254,7 +254,7 @@ const REFUND_COPY: Record<string, { title: string; body: string }> = {
   },
   creator_removed_active_placement: {
     title: "Placement was removed",
-    body: "Your sponsored placement was removed from Social Bid, so your payment has been refunded.",
+    body: "Your sponsored placement was removed from SocialBid, so your payment has been refunded.",
   },
   concurrent_purchase_conflict: {
     title: "Your purchase couldn't be completed",
@@ -289,15 +289,15 @@ export async function sendBuyerAwaitingActivationEmail(o: {
 }) {
   await send(
     o.to,
-    "Your sponsorship is live on Social Bid",
+    "Your sponsorship is live on SocialBid",
     shell(`
       ${h1("Purchase successful")}
-      ${p(`You sponsored <b>@${o.handle}</b> on Social Bid. Your placement is published on Social Bid only.`)}
+      ${p(`You sponsored <b>@${o.handle}</b> on SocialBid. Your placement is published on SocialBid only.`)}
       ${facts([
         ["You paid", money(o.amountCents)],
         ["Your placement", o.message ? `${SPONSOR_PREFIX} ${o.message}` : "\u2014"],
         ["Your link", o.destination],
-        ["Status", "Live on Social Bid"],
+        ["Status", "Live on SocialBid"],
       ])}
     `),
   );
@@ -312,20 +312,20 @@ export async function sendCreatorActionRequiredEmail(o: {
 }) {
   await send(
     o.to,
-    "New sponsor on your Social Bid profile",
+    "New sponsor on your SocialBid profile",
     shell(
       `
       ${h1("You have a new sponsor")}
-      ${p("Somebody just sponsored your Social Bid profile. Their message and link are live now.")}
+      ${p("Somebody just sponsored your SocialBid profile. Their message and link are live now.")}
       ${facts([
         ["Sponsorship", money(o.amountCents)],
         ["Sponsored message", o.message ? `${SPONSOR_PREFIX} ${o.message}` : "\u2014"],
         ["Destination", o.destination],
-        ["Status", "Live on Social Bid"],
+        ["Status", "Live on SocialBid"],
       ])}
       ${button(`${baseUrl()}/creator`, "Open your dashboard \u2192")}
     `,
-      "You received this because you added your profile to Social Bid.",
+      "You received this because you added your profile to SocialBid.",
     ),
   );
 }
@@ -346,8 +346,8 @@ export async function sendPlacementVerifiedEmail(o: {
       ${h1(buyer ? "Your sponsorship is live" : "Your profile has a new sponsor")}
       ${p(
         buyer
-          ? `Your sponsored spot on <b>@${o.handle}</b>'s Social Bid profile is active. It's yours until somebody pays more.`
-          : `The sponsorship is live on your Social Bid profile.${
+          ? `Your sponsored spot on <b>@${o.handle}</b>'s SocialBid profile is active. It's yours until somebody pays more.`
+          : `The sponsorship is live on your SocialBid profile.${
               o.eligibleDate ? ` Eligible for payout after ${o.eligibleDate}.` : ""
             }`,
       )}
@@ -367,10 +367,10 @@ export async function sendListingSuspendedEmail(o: { to: string; reason: string 
     shell(
       `
       ${h1("Profile suspended")}
-      ${p(`Your Social Bid profile was suspended (${o.reason}). Open your dashboard for details.`)}
+      ${p(`Your SocialBid profile was suspended (${o.reason}). Open your dashboard for details.`)}
       ${button(`${baseUrl()}/creator`, "Open your dashboard \u2192")}
     `,
-      "You received this because you added your profile to Social Bid.",
+      "You received this because you added your profile to SocialBid.",
     ),
   );
 }
@@ -382,10 +382,10 @@ export async function sendPlacementMismatchWarningEmail(o: { to: string; reason:
     shell(
       `
       ${h1("Review your sponsored placement")}
-      ${p(`Your Social Bid placement needs review (${o.reason}). Open your dashboard for details.`)}
+      ${p(`Your SocialBid placement needs review (${o.reason}). Open your dashboard for details.`)}
       ${button(`${baseUrl()}/creator`, "Open your dashboard \u2192")}
     `,
-      "You received this because you added your profile to Social Bid.",
+      "You received this because you added your profile to SocialBid.",
     ),
   );
 }
@@ -401,7 +401,7 @@ export async function sendPayoutReleasedEmail(o: { to: string; amountCents: numb
       ${facts([["Amount", money(o.amountCents)]])}
       ${button(`${baseUrl()}/creator`, "Open your dashboard \u2192")}
     `,
-      "You received this because you added your profile to Social Bid.",
+      "You received this because you added your profile to SocialBid.",
     ),
   );
 }
@@ -414,16 +414,16 @@ export async function sendListingActivationReminderEmail(o: {
 }) {
   return send(
     o.to,
-    "Your Social Bid profile isn't live yet",
+    "Your SocialBid profile isn't live yet",
     shell(
       `
       ${h1("One click and you're live")}
-      ${p(`Hi ${o.displayName} — your X account is connected, but your profile still isn't showing in the Social Bid rankings, so sponsors can't sponsor you yet.`)}
+      ${p(`Hi ${o.displayName} — your X account is connected, but your profile still isn't showing in the SocialBid rankings, so sponsors can't sponsor you yet.`)}
       ${facts([["Opening sponsorship price", money(o.startingPriceCents)]])}
       ${button(`${baseUrl()}/creator`, "Add my profile \u2192")}
-      ${p("Nothing changes on X. Sponsorships only appear on Social Bid, and you keep 80% of every sponsorship.")}
+      ${p("Nothing changes on X. Sponsorships only appear on SocialBid, and you keep 80% of every sponsorship.")}
     `,
-      "You received this because you connected your X account to Social Bid.",
+      "You received this because you connected your X account to SocialBid.",
     ),
     { idempotencyKey: o.idempotencyKey },
   );
@@ -440,12 +440,12 @@ export async function sendPayoutSetupReminderEmail(o: {
     shell(
       `
       ${h1("Your earnings are waiting")}
-      ${p("You've earned money from sponsorships on Social Bid, but we can't send it until your payout account is connected. It takes about two minutes.")}
+      ${p("You've earned money from sponsorships on SocialBid, but we can't send it until your payout account is connected. It takes about two minutes.")}
       ${facts([["Waiting to be paid", money(o.amountCents)]])}
       ${button(`${baseUrl()}/creator`, "Connect payouts \u2192")}
       ${p("Once connected, held payouts are released automatically after their standard 7-day hold.")}
     `,
-      "You received this because you added your profile to Social Bid.",
+      "You received this because you added your profile to SocialBid.",
     ),
     { idempotencyKey: o.idempotencyKey },
   );
@@ -458,15 +458,15 @@ export async function sendPasswordResetEmail(o: {
 }) {
   return send(
     o.to,
-    "Set your Social Bid password",
+    "Set your SocialBid password",
     shell(
       `
       ${h1("Set your password")}
-      ${p("Use the button below to choose a password for your Social Bid account. The link expires soon — if it stops working, request a fresh one from the sign-in page.")}
+      ${p("Use the button below to choose a password for your SocialBid account. The link expires soon — if it stops working, request a fresh one from the sign-in page.")}
       ${button(o.actionLink, "Set password \u2192")}
       ${p("If you didn't ask for this, you can ignore this email.")}
     `,
-      "You received this because a password reset was requested for your Social Bid account.",
+      "You received this because a password reset was requested for your SocialBid account.",
     ),
     { idempotencyKey: o.idempotencyKey, throwOnFailure: true },
   );

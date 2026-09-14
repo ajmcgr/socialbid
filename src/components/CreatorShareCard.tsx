@@ -422,7 +422,7 @@ export function CreatorShareCard({
         ref={canvasRef}
         width={SIZE}
         height={SIZE}
-        aria-label={`Social Bid share card for ${data.displayName}`}
+        aria-label={`SocialBid share card for ${data.displayName}`}
         className="aspect-square h-auto w-full border-2 border-border bg-card"
       />
       <div className="mt-4 flex flex-wrap gap-2">
