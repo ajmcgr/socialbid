@@ -88,13 +88,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Social Bid — How much are you worth on X?" },
+      { title: "SocialBid — How much are you worth on X?" },
       {
         name: "description",
         content:
-          "Add your X profile and let sponsors decide what you’re worth. Sponsors compete for the top sponsorship spot on Social Bid.",
+          "Add your X profile and let sponsors decide what you’re worth. Sponsors compete for the top sponsorship spot on SocialBid.",
       },
-      { property: "og:site_name", content: "Social Bid" },
+      { property: "og:site_name", content: "SocialBid" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "How much are you worth on X?" },
@@ -285,7 +285,7 @@ function SiteHeader() {
         <Link to="/" className="flex items-center">
           <img
             src="/social-bid-logo.png"
-            alt="Social Bid"
+            alt="SocialBid"
             className="h-10 w-auto scale-[1.12] dark:invert sm:h-14"
           />
         </Link>
@@ -421,7 +421,7 @@ function SiteFooter() {
           </a>
           .{" "}
           <span className="text-muted-foreground/80">
-            Social Bid is not affiliated with or endorsed by X.
+            SocialBid is not affiliated with or endorsed by X.
           </span>
         </span>
       </div>

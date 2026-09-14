@@ -169,7 +169,7 @@ export function BuyDialog({
 
         <div className="border-b-2 border-border px-5 py-4 text-sm text-foreground">
           <p>
-            You're sponsoring this creator on Social Bid. Your message and link stay in the
+            You're sponsoring this creator on SocialBid. Your message and link stay in the
             <b> sponsorship spot</b> until somebody pays more.
           </p>
           <p className="mt-2 text-foreground/75">
@@ -225,7 +225,7 @@ export function BuyDialog({
               className="field mt-1"
             />
             <p className="mt-1 text-xs text-muted-foreground">
-              Your link is shown with your message on the creator's Social Bid profile. We'll add
+              Your link is shown with your message on the creator's SocialBid profile. We'll add
               https:// automatically.
             </p>
           </div>
@@ -312,7 +312,7 @@ export function BuyDialog({
               Your sponsorship spot stays live until somebody pays more.
             </p>
             <p className="mt-1 text-muted-foreground">
-              Your sponsored message goes live on this creator's Social Bid profile immediately
+              Your sponsored message goes live on this creator's SocialBid profile immediately
               after payment.
             </p>
           </div>

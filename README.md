@@ -1,17 +1,17 @@
-# Social Bid
+# SocialBid
 
-Social Bid is a marketplace for creator sponsorships at [socialbid.co](https://socialbid.co).
+SocialBid is a marketplace for creator sponsorships at [socialbid.co](https://socialbid.co).
 
 Creators connect X to confirm their identity and add a public profile. Sponsors bid for the
-disclosed sponsorship spot on that creator's Social Bid page. The current sponsor keeps the spot
+disclosed sponsorship spot on that creator's SocialBid page. The current sponsor keeps the spot
 until somebody pays more.
 
-Sponsorship appears on Social Bid only. Nothing is posted to X, and creators never need to take
+Sponsorship appears on SocialBid only. Nothing is posted to X, and creators never need to take
 an action on X after connecting their account.
 
 ## Product rules
 
-- Creators receive 80% of a completed sponsorship and Social Bid retains 20%.
+- Creators receive 80% of a completed sponsorship and SocialBid retains 20%.
 - Creator payouts are held for seven days before release.
 - A new bid replaces the current sponsor without changing historical sponsorship or click records.
 - Guest sponsorship is supported.

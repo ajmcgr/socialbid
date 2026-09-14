@@ -4,12 +4,12 @@ import alexAsset from "../assets/alex.png.asset.json";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About — Social Bid" },
+      { title: "About — SocialBid" },
       {
         name: "description",
-        content: "Social Bid lets anyone sponsor a creator's profile on Social Bid.",
+        content: "SocialBid lets anyone sponsor a creator's profile on SocialBid.",
       },
-      { property: "og:title", content: "About Social Bid" },
+      { property: "og:title", content: "About SocialBid" },
       {
         property: "og:description",
         content: "One sponsor spot. Pay more than the last sponsor and it's yours.",
@@ -26,24 +26,24 @@ function About() {
     <div className="mx-auto max-w-2xl px-5 py-16">
       <div className="rounded-2xl border border-border bg-card p-8 shadow-sm sm:p-12">
         <h1 className="text-[clamp(2rem,6vw,3rem)] leading-[1] font-semibold tracking-[-0.04em]">
-          About Social Bid
+          About SocialBid
         </h1>
 
         <p className="mt-6 text-xl leading-relaxed">
-          Social Bid is a public marketplace for creator sponsorships.
+          SocialBid is a public marketplace for creator sponsorships.
         </p>
 
         <div className="mt-8 space-y-6 text-lg leading-relaxed text-foreground/90">
           <p>Hello there!</p>
 
           <p>
-            Creators spend years building an audience. Social Bid gives each creator a public
+            Creators spend years building an audience. SocialBid gives each creator a public
             profile with one clearly disclosed sponsor spot that anyone can compete for.
           </p>
 
           <p>
             Anyone can sponsor it. No account, no waiting, no auction deadline. Pay the current
-            price and your message and link appear on Social Bid as soon as payment clears. You keep
+            price and your message and link appear on SocialBid as soon as payment clears. You keep
             the spot until someone pays more — and if that happens, we'll email you the price to
             take it back.
           </p>
@@ -58,7 +58,7 @@ function About() {
             className="mb-4 h-28 w-28 rounded-none object-cover"
           />
           <p className="font-semibold">Alex MacGregor</p>
-          <p className="text-sm text-muted-foreground">Founder, Social Bid</p>
+          <p className="text-sm text-muted-foreground">Founder, SocialBid</p>
           <a
             href="https://x.com/alexmacgregor__"
             target="_blank"

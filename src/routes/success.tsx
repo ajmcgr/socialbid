@@ -13,15 +13,15 @@ export const Route = createFileRoute("/success")({
   },
   head: () => ({
     meta: [
-      { title: "Purchase successful — Social Bid" },
+      { title: "Purchase successful — SocialBid" },
       {
         name: "description",
-        content: "Your purchase is confirmed and your sponsored placement is live on Social Bid.",
+        content: "Your purchase is confirmed and your sponsored placement is live on SocialBid.",
       },
-      { property: "og:title", content: "I just sponsored a creator on Social Bid" },
+      { property: "og:title", content: "I just sponsored a creator on SocialBid" },
       {
         property: "og:description",
-        content: "My sponsored message and link are live on Social Bid until someone outbids me.",
+        content: "My sponsored message and link are live on SocialBid until someone outbids me.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -81,7 +81,7 @@ function Success() {
       <div className="panel mt-6 px-5 py-4">
         <p className="font-semibold">Your sponsored placement is live.</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          It's showing on this creator's Social Bid profile right now, and stays there until
+          It's showing on this creator's SocialBid profile right now, and stays there until
           somebody pays more.
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -91,7 +91,7 @@ function Success() {
       </div>
       {result.globalRank === 1 ? (
         <div className="mt-6 flex items-center gap-3 border-2 border-border bg-accent px-5 py-4 font-mono text-sm font-extrabold text-accent-foreground">
-          <Trophy className="size-5" /> The #1 creator sponsorship on Social Bid
+          <Trophy className="size-5" /> The #1 creator sponsorship on SocialBid
         </div>
       ) : result.globalRank ? (
         <p className="mt-4 font-mono text-sm font-bold">Now #{result.globalRank} most valuable</p>
@@ -121,8 +121,8 @@ function Success() {
         <a
           href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
             result.globalRank === 1
-              ? `We hold the #1 creator sponsorship on Social Bid.\n\n@${result.creatorHandle} — ${money(result.amountCents)}`
-              : `We just sponsored @${result.creatorHandle} on Social Bid for ${money(result.amountCents)}${result.globalRank ? `. Now #${result.globalRank} on @SocialBid.` : "."}`,
+              ? `We hold the #1 creator sponsorship on SocialBid.\n\n@${result.creatorHandle} — ${money(result.amountCents)}`
+              : `We just sponsored @${result.creatorHandle} on SocialBid for ${money(result.amountCents)}${result.globalRank ? `. Now #${result.globalRank} on @SocialBid.` : "."}`,
           )}&url=${encodeURIComponent(`https://socialbid.co/u/${result.slug}`)}`}
           target="_blank"
           rel="noreferrer"

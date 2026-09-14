@@ -39,11 +39,11 @@ export const Route = createFileRoute("/")({
   },
   head: () => ({
     meta: [
-      { title: "Social Bid — How much are you worth on X?" },
+      { title: "SocialBid — How much are you worth on X?" },
       {
         name: "description",
         content:
-          "Add your X profile and let sponsors decide what you’re worth. Sponsors compete for the top sponsorship spot on Social Bid.",
+          "Add your X profile and let sponsors decide what you’re worth. Sponsors compete for the top sponsorship spot on SocialBid.",
       },
       { property: "og:title", content: "How much are you worth on X?" },
       {

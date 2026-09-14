@@ -177,7 +177,7 @@ export function randomMarketEntryShareText(data: ShareCardData): string {
 export function shareCardPostText(data: ShareCardData): string {
   if (data.sponsorName && data.currentValueCents !== null) {
     const handleTag = data.handle ? ` (@${data.handle})` : "";
-    return `${data.displayName}${handleTag} is sponsored on Social Bid.`;
+    return `${data.displayName}${handleTag} is sponsored on SocialBid.`;
   }
   const template = marketEntryTemplates[0];
   if (!template) {

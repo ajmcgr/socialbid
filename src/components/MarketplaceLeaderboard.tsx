@@ -243,7 +243,7 @@ function LeaderboardRow({
 function ActivityLine({ item }: { item: MarketplaceActivity }) {
   // Historical platform-owned sponsorship records used the former product
   // name. Keep the record intact and normalize only this public display.
-  const sponsorName = item.companyName === "Buy My Bio" ? "Social Bid" : item.companyName;
+  const sponsorName = item.companyName === "Buy My Bio" ? "SocialBid" : item.companyName;
   const copy =
     item.type === "listed"
       ? `@${item.handle} entered the market`
@@ -511,7 +511,7 @@ export function MarketplaceLeaderboard({
             <a
               className="mt-4 flex items-center gap-2 text-sm font-bold underline"
               href={`https://x.com/intent/post?text=${encodeURIComponent(
-                `@${handleOf(numberOne)} has the #1 creator sponsorship on Social Bid at ${money(numberOne.bioValueCents ?? 0)}.`,
+                `@${handleOf(numberOne)} has the #1 creator sponsorship on SocialBid at ${money(numberOne.bioValueCents ?? 0)}.`,
               )}&url=${encodeURIComponent(`https://socialbid.co/u/${numberOne.creator.username}`)}`}
               target="_blank"
               rel="noreferrer"

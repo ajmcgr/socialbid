@@ -7,7 +7,7 @@ export const Route = createFileRoute("/owners")({
   loader: async () => await getMarketplace({ data: { sort: "most-valuable" } }),
   head: () => ({
     meta: [
-      { title: "Top Sponsors — Social Bid" },
+      { title: "Top Sponsors — SocialBid" },
       {
         name: "description",
         content: "See the buyers and brands holding the most valuable creator sponsorships.",
@@ -73,7 +73,7 @@ function OwnersPage() {
           </div>
           <a
             href={`https://x.com/intent/post?text=${encodeURIComponent(
-              `${numberOne.owner.company_name} holds the #1 creator sponsorship on Social Bid.`,
+              `${numberOne.owner.company_name} holds the #1 creator sponsorship on SocialBid.`,
             )}&url=${encodeURIComponent(`https://socialbid.co/u/${numberOne.creator.username}`)}`}
             target="_blank"
             rel="noreferrer"

@@ -5,12 +5,12 @@ import { sendContactMessage } from "@/lib/contact.functions";
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact — Social Bid" },
+      { title: "Contact — SocialBid" },
       {
         name: "description",
-        content: "Get in touch with Social Bid for questions, partnerships or press.",
+        content: "Get in touch with SocialBid for questions, partnerships or press.",
       },
-      { property: "og:title", content: "Contact — Social Bid" },
+      { property: "og:title", content: "Contact — SocialBid" },
       {
         property: "og:description",
         content: "Questions, partnerships or press? Get in touch.",
@@ -130,16 +130,16 @@ function Contact() {
         <h2 id="media-kit-heading" className="text-2xl font-semibold tracking-tight">
           Media Kit
         </h2>
-        <p className="mt-2 text-muted-foreground">Download official Social Bid brand assets.</p>
+        <p className="mt-2 text-muted-foreground">Download official SocialBid brand assets.</p>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <MediaAsset
-            name="Social Bid icon"
+            name="SocialBid icon"
             src="/socialbid-icon.png"
             previewClassName="h-28 w-28"
             download="socialbid-icon.png"
           />
           <MediaAsset
-            name="Social Bid logo"
+            name="SocialBid logo"
             src="/socialbid-logo.png"
             previewClassName="h-28 w-full max-w-[260px]"
             download="socialbid-logo.png"
