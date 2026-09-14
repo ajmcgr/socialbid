@@ -29,6 +29,7 @@ import { Route as ApiPublicShareAvatarRouteImport } from './routes/api/public/sh
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
 import { Route as ApiPublicXCallbackRouteImport } from './routes/api/public/x-callback'
 import { Route as ApiPublicXStartRouteImport } from './routes/api/public/x-start'
+import { Route as ApiPublicOgUsernameRouteImport } from './routes/api/public/og.$username'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -130,6 +131,11 @@ const ApiPublicXStartRoute = ApiPublicXStartRouteImport.update({
   path: '/api/public/x-start',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicOgUsernameRoute = ApiPublicOgUsernameRouteImport.update({
+  id: '/api/public/og/$username',
+  path: '/api/public/og/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/x-callback': typeof ApiPublicXCallbackRoute
   '/api/public/x-start': typeof ApiPublicXStartRoute
+  '/api/public/og/$username': typeof ApiPublicOgUsernameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/x-callback': typeof ApiPublicXCallbackRoute
   '/api/public/x-start': typeof ApiPublicXStartRoute
+  '/api/public/og/$username': typeof ApiPublicOgUsernameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/x-callback': typeof ApiPublicXCallbackRoute
   '/api/public/x-start': typeof ApiPublicXStartRoute
+  '/api/public/og/$username': typeof ApiPublicOgUsernameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/api/public/stripe-webhook'
     | '/api/public/x-callback'
     | '/api/public/x-start'
+    | '/api/public/og/$username'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/api/public/stripe-webhook'
     | '/api/public/x-callback'
     | '/api/public/x-start'
+    | '/api/public/og/$username'
   id:
     | '__root__'
     | '/'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/api/public/stripe-webhook'
     | '/api/public/x-callback'
     | '/api/public/x-start'
+    | '/api/public/og/$username'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -288,6 +300,7 @@ export interface RootRouteChildren {
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   ApiPublicXCallbackRoute: typeof ApiPublicXCallbackRoute
   ApiPublicXStartRoute: typeof ApiPublicXStartRoute
+  ApiPublicOgUsernameRoute: typeof ApiPublicOgUsernameRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -432,6 +445,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicXStartRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/og/$username': {
+      id: '/api/public/og/$username'
+      path: '/api/public/og/$username'
+      fullPath: '/api/public/og/$username'
+      preLoaderRoute: typeof ApiPublicOgUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -456,6 +476,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   ApiPublicXCallbackRoute: ApiPublicXCallbackRoute,
   ApiPublicXStartRoute: ApiPublicXStartRoute,
+  ApiPublicOgUsernameRoute: ApiPublicOgUsernameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
