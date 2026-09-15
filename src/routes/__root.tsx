@@ -9,13 +9,13 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Mail, Menu, Moon, Sun } from "lucide-react";
+import { Heart, Mail, Menu, Moon, Sun } from "lucide-react";
 import { XIcon } from "../components/XIcon";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { getPublicConfig, unavailablePublicConfig } from "../lib/public-config.functions";
-import { getCreatorSession, type CreatorSession } from "../lib/creator.functions";
+import { getCreatorAuthState } from "../lib/creator.functions";
 import {
   getSupabase,
   initSupabase,
@@ -76,18 +76,28 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async () => {
-    try {
-      return await getPublicConfig();
-    } catch (error) {
-      // Public Supabase browser config is nonessential to rendering the first
-      // document. A transient server-function failure must not turn a normal
-      // browser restore into a site-wide SSR 500.
-      console.error("root public config unavailable", {
-        stage: "root_public_config",
-        reason: error instanceof Error ? error.message : "unknown",
-      });
-      return unavailablePublicConfig;
-    }
+    const [config, creatorAuthenticated] = await Promise.all([
+      getPublicConfig().catch((error) => {
+        // Public Supabase browser config is nonessential to rendering the first
+        // document. A transient server-function failure must not turn a normal
+        // browser restore into a site-wide SSR 500.
+        console.error("root public config unavailable", {
+          stage: "root_public_config",
+          reason: error instanceof Error ? error.message : "unknown",
+        });
+        return unavailablePublicConfig;
+      }),
+      getCreatorAuthState({ data: {} }).catch((error) => {
+        // Preserve an unresolved state rather than rendering either auth label
+        // when the lightweight session lookup is temporarily unavailable.
+        console.error("root creator auth unavailable", {
+          stage: "root_creator_auth",
+          reason: error instanceof Error ? error.message : "unknown",
+        });
+        return undefined;
+      }),
+    ]);
+    return { ...config, creatorAuthenticated };
   },
   head: () => ({
     meta: [
@@ -192,7 +202,13 @@ type MessagingNavState = {
   notifications: number;
 };
 
-function HamburgerMenu({ messaging }: { messaging: MessagingNavState | undefined }) {
+function HamburgerMenu({
+  messaging,
+  inboxAvailable,
+}: {
+  messaging: MessagingNavState | undefined;
+  inboxAvailable: boolean;
+}) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -215,19 +231,19 @@ function HamburgerMenu({ messaging }: { messaging: MessagingNavState | undefined
       </button>
       {open ? (
         <div className="absolute right-0 z-50 mt-3 w-52 overflow-hidden rounded-2xl bg-card py-2 shadow-[0_10px_40px_rgba(0,0,0,0.14)] ring-1 ring-black/5">
-          {messaging?.available ? (
+          {inboxAvailable ? (
             <Link
               to="/inbox"
               onClick={() => setOpen(false)}
               className="block px-5 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:hidden"
             >
-              Inbox{messaging.inbox ? ` (${messaging.inbox})` : ""}
+              Inbox{messaging?.inbox ? ` (${messaging.inbox})` : ""}
             </Link>
           ) : null}
           <Link
             to="/notifications"
             onClick={() => setOpen(false)}
-            className="block px-5 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="block px-5 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:hidden"
           >
             Notifications{messaging?.notifications ? ` (${messaging.notifications})` : ""}
           </Link>
@@ -272,11 +288,15 @@ function HamburgerMenu({ messaging }: { messaging: MessagingNavState | undefined
   );
 }
 
-function SiteHeader() {
-  // `undefined` is the unresolved state. Do not render a logged-out CTA until
-  // the server-side creator session lookup has completed.
-  const [creatorSession, setCreatorSession] = useState<CreatorSession | null | undefined>(
-    undefined,
+function SiteHeader({
+  initialCreatorAuthenticated,
+}: {
+  initialCreatorAuthenticated: boolean | undefined;
+}) {
+  // `undefined` is unresolved. The SSR loader normally seeds this so returning
+  // creators receive their authenticated navigation in the initial document.
+  const [creatorAuthenticated, setCreatorAuthenticated] = useState<boolean | undefined>(
+    initialCreatorAuthenticated,
   );
   const [messaging, setMessaging] = useState<MessagingNavState | undefined>(undefined);
   const locationHref = useRouterState({ select: (state) => state.location.href });
@@ -285,16 +305,17 @@ function SiteHeader() {
   useEffect(() => {
     let active = true;
     const refreshCreatorSession = () =>
-      void getCreatorSession({ data: {} })
-        .then((session) => {
-          if (active) setCreatorSession(session);
+      void getCreatorAuthState({ data: {} })
+        .then((authenticated) => {
+          if (active) setCreatorAuthenticated(authenticated);
         })
         .catch(() => {
           // A transient wake/reconnect failure must not turn an already-known
           // creator into a logged-out user. On first load we can safely settle
           // to the unauthenticated state; later failures keep the last result
           // until the next recovery attempt succeeds.
-          if (active) setCreatorSession((current) => (current === undefined ? null : current));
+          if (active)
+            setCreatorAuthenticated((current) => (current === undefined ? false : current));
         });
     refreshCreatorSession();
     window.addEventListener("creator-session-changed", refreshCreatorSession);
@@ -339,7 +360,9 @@ function SiteHeader() {
     };
   }, [locationHref]);
 
-  const creatorCta = creatorSession ? "My Profile" : "Add your profile";
+  const creatorCta = creatorAuthenticated ? "My Profile" : "Add your profile";
+  const inboxAvailable = creatorAuthenticated === true || messaging?.available === true;
+  const inboxResolving = creatorAuthenticated === undefined || messaging === undefined;
 
   return (
     <header>
@@ -358,31 +381,52 @@ function SiteHeader() {
           <Link to="/faq" className="hover:underline">
             FAQ
           </Link>
-          {creatorSession === undefined ? (
+          {creatorAuthenticated === undefined ? (
             <span aria-hidden="true" className="inline-block h-5 w-[6.5rem]" />
           ) : (
             <Link to="/creator" className="hover:underline">
               {creatorCta}
             </Link>
           )}
-          {messaging?.available ? (
-            <Link
-              to="/inbox"
-              aria-label="Inbox"
-              title="Inbox"
-              aria-current={pathname.startsWith("/inbox") ? "page" : undefined}
-              className={`relative hidden items-center justify-center p-1 hover:opacity-70 sm:inline-flex ${pathname.startsWith("/inbox") ? "text-primary" : ""}`}
-            >
-              <Mail size={19} />
-              {messaging.inbox ? (
-                <span className="absolute -top-1.5 -right-2 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 font-mono text-[9px] leading-4 font-bold text-primary-foreground">
-                  {messaging.inbox > 99 ? "99+" : messaging.inbox}
-                </span>
-              ) : null}
-            </Link>
+          {inboxAvailable ? (
+            <>
+              <Link
+                to="/inbox"
+                aria-label="Inbox"
+                title="Inbox"
+                aria-current={pathname.startsWith("/inbox") ? "page" : undefined}
+                className={`relative hidden items-center justify-center p-1 hover:opacity-70 sm:inline-flex ${pathname.startsWith("/inbox") ? "text-primary" : ""}`}
+              >
+                <Mail size={19} />
+                {messaging?.inbox ? (
+                  <span className="absolute -top-1.5 -right-2 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 font-mono text-[9px] leading-4 font-bold text-primary-foreground">
+                    {messaging.inbox > 99 ? "99+" : messaging.inbox}
+                  </span>
+                ) : null}
+              </Link>
+              <Link
+                to="/notifications"
+                aria-label="Notifications"
+                title="Notifications"
+                aria-current={pathname.startsWith("/notifications") ? "page" : undefined}
+                className={`relative hidden items-center justify-center p-1 hover:opacity-70 sm:inline-flex ${pathname.startsWith("/notifications") ? "text-primary" : ""}`}
+              >
+                <Heart size={19} />
+                {messaging?.notifications ? (
+                  <span className="absolute -top-1.5 -right-2 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 font-mono text-[9px] leading-4 font-bold text-primary-foreground">
+                    {messaging.notifications > 99 ? "99+" : messaging.notifications}
+                  </span>
+                ) : null}
+              </Link>
+            </>
+          ) : inboxResolving ? (
+            <span
+              aria-hidden="true"
+              className="hidden h-[27px] w-[78px] shrink-0 sm:inline-block"
+            />
           ) : null}
           <ThemeToggle />
-          <HamburgerMenu messaging={messaging} />
+          <HamburgerMenu messaging={messaging} inboxAvailable={inboxAvailable} />
         </nav>
       </div>
     </header>
@@ -517,7 +561,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <div className="flex min-h-dvh flex-col">
         <AppWakeRecovery />
-        <SiteHeader />
+        <SiteHeader initialCreatorAuthenticated={config.creatorAuthenticated} />
         <main className="flex-1">
           <Outlet />
         </main>

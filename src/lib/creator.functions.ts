@@ -4,6 +4,17 @@ import { z } from "zod";
 
 const creatorSessionIn = z.object({});
 
+/** Lightweight header auth check; avoids loading creator/marketplace data. */
+export const getCreatorAuthState = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => creatorSessionIn.parse(input))
+  .handler(async (): Promise<boolean> => {
+    const [{ admin }, { resolveCreatorSession }] = await Promise.all([
+      import("./db.server"),
+      import("./creator-session.server"),
+    ]);
+    return Boolean(await resolveCreatorSession(admin()));
+  });
+
 export type CreatorSession = {
   username: string;
   displayName: string;

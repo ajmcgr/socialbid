@@ -396,7 +396,7 @@ export function MarketplaceLeaderboard({
               How much are you worth on X?
             </h1>
             <p className="mt-3 max-w-2xl text-base font-medium text-muted-foreground sm:text-lg">
-              Add your X profile. Brands compete to sponsor you. You keep 80%.
+              Add your X profile. Anyone compete to sponsor you. You keep 80%.
             </p>
           </div>
         </div>
