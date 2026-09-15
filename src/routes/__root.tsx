@@ -9,7 +9,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Menu, Moon, Sun } from "lucide-react";
+import { Mail, Menu, Moon, Sun } from "lucide-react";
 import { XIcon } from "../components/XIcon";
 
 import appCss from "../styles.css?url";
@@ -186,38 +186,20 @@ function ThemeToggle() {
   );
 }
 
-function HamburgerMenu() {
+type MessagingNavState = {
+  available: boolean;
+  inbox: number;
+  notifications: number;
+};
+
+function HamburgerMenu({ messaging }: { messaging: MessagingNavState | undefined }) {
   const [open, setOpen] = useState(false);
-  const [unread, setUnread] = useState({ inbox: 0, notifications: 0 });
 
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
     window.addEventListener("click", close);
     return () => window.removeEventListener("click", close);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    let active = true;
-    void (async () => {
-      const sb = getSupabase();
-      const token = sb ? (await sb.auth.getSession()).data.session?.access_token : null;
-      const result = await getMessagingContext({ data: { token: token ?? null } });
-      if (!active) return;
-      setUnread({
-        inbox: result.conversations.reduce(
-          (total, conversation) => total + conversation.unreadCount,
-          0,
-        ),
-        notifications: result.unreadNotifications,
-      });
-    })().catch(() => {
-      // Navigation remains available if a transient unread-count request fails.
-    });
-    return () => {
-      active = false;
-    };
   }, [open]);
 
   return (
@@ -233,19 +215,21 @@ function HamburgerMenu() {
       </button>
       {open ? (
         <div className="absolute right-0 z-50 mt-3 w-52 overflow-hidden rounded-2xl bg-card py-2 shadow-[0_10px_40px_rgba(0,0,0,0.14)] ring-1 ring-black/5">
-          <Link
-            to="/inbox"
-            onClick={() => setOpen(false)}
-            className="block px-5 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            Inbox{unread.inbox ? ` (${unread.inbox})` : ""}
-          </Link>
+          {messaging?.available ? (
+            <Link
+              to="/inbox"
+              onClick={() => setOpen(false)}
+              className="block px-5 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:hidden"
+            >
+              Inbox{messaging.inbox ? ` (${messaging.inbox})` : ""}
+            </Link>
+          ) : null}
           <Link
             to="/notifications"
             onClick={() => setOpen(false)}
             className="block px-5 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            Notifications{unread.notifications ? ` (${unread.notifications})` : ""}
+            Notifications{messaging?.notifications ? ` (${messaging.notifications})` : ""}
           </Link>
           <Link
             to="/owners"
@@ -294,7 +278,9 @@ function SiteHeader() {
   const [creatorSession, setCreatorSession] = useState<CreatorSession | null | undefined>(
     undefined,
   );
+  const [messaging, setMessaging] = useState<MessagingNavState | undefined>(undefined);
   const locationHref = useRouterState({ select: (state) => state.location.href });
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   useEffect(() => {
     let active = true;
@@ -317,6 +303,39 @@ function SiteHeader() {
       active = false;
       window.removeEventListener("creator-session-changed", refreshCreatorSession);
       window.removeEventListener("social-bid-recover", refreshCreatorSession);
+    };
+  }, [locationHref]);
+
+  useEffect(() => {
+    let active = true;
+    const refreshMessaging = () =>
+      void (async () => {
+        const sb = getSupabase();
+        const token = sb ? (await sb.auth.getSession()).data.session?.access_token : null;
+        const result = await getMessagingContext({ data: { token: token ?? null } });
+        if (!active) return;
+        setMessaging({
+          available: Boolean(result.actor),
+          inbox: result.conversations.reduce(
+            (total, conversation) => total + conversation.unreadCount,
+            0,
+          ),
+          notifications: result.unreadNotifications,
+        });
+      })().catch(() => {
+        // Keep authenticated-only messaging navigation hidden if its
+        // authoritative context cannot be resolved.
+        if (active) setMessaging(undefined);
+      });
+    refreshMessaging();
+    window.addEventListener("creator-session-changed", refreshMessaging);
+    window.addEventListener("social-bid-recover", refreshMessaging);
+    window.addEventListener("social-bid-messaging-changed", refreshMessaging);
+    return () => {
+      active = false;
+      window.removeEventListener("creator-session-changed", refreshMessaging);
+      window.removeEventListener("social-bid-recover", refreshMessaging);
+      window.removeEventListener("social-bid-messaging-changed", refreshMessaging);
     };
   }, [locationHref]);
 
@@ -346,8 +365,24 @@ function SiteHeader() {
               {creatorCta}
             </Link>
           )}
+          {messaging?.available ? (
+            <Link
+              to="/inbox"
+              aria-label="Inbox"
+              title="Inbox"
+              aria-current={pathname.startsWith("/inbox") ? "page" : undefined}
+              className={`relative hidden items-center justify-center p-1 hover:opacity-70 sm:inline-flex ${pathname.startsWith("/inbox") ? "text-primary" : ""}`}
+            >
+              <Mail size={19} />
+              {messaging.inbox ? (
+                <span className="absolute -top-1.5 -right-2 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 font-mono text-[9px] leading-4 font-bold text-primary-foreground">
+                  {messaging.inbox > 99 ? "99+" : messaging.inbox}
+                </span>
+              ) : null}
+            </Link>
+          ) : null}
           <ThemeToggle />
-          <HamburgerMenu />
+          <HamburgerMenu messaging={messaging} />
         </nav>
       </div>
     </header>

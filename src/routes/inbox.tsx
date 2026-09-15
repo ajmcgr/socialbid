@@ -62,6 +62,7 @@ function InboxPage() {
       else {
         setMessages(result.messages);
         setBlockedState(result.blocked);
+        window.dispatchEvent(new Event("social-bid-messaging-changed"));
       }
     });
     return () => {
