@@ -16,7 +16,12 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { getPublicConfig, unavailablePublicConfig } from "../lib/public-config.functions";
 import { getCreatorSession, type CreatorSession } from "../lib/creator.functions";
-import { initSupabase, recoverSupabaseSession } from "../integrations/supabase/browser";
+import {
+  getSupabase,
+  initSupabase,
+  recoverSupabaseSession,
+} from "../integrations/supabase/browser";
+import { getMessagingContext } from "../lib/inbox.functions";
 
 const WAKE_RECOVERY_THRESHOLD_MS = 30_000;
 
@@ -183,12 +188,36 @@ function ThemeToggle() {
 
 function HamburgerMenu() {
   const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState({ inbox: 0, notifications: 0 });
 
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
     window.addEventListener("click", close);
     return () => window.removeEventListener("click", close);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    void (async () => {
+      const sb = getSupabase();
+      const token = sb ? (await sb.auth.getSession()).data.session?.access_token : null;
+      const result = await getMessagingContext({ data: { token: token ?? null } });
+      if (!active) return;
+      setUnread({
+        inbox: result.conversations.reduce(
+          (total, conversation) => total + conversation.unreadCount,
+          0,
+        ),
+        notifications: result.unreadNotifications,
+      });
+    })().catch(() => {
+      // Navigation remains available if a transient unread-count request fails.
+    });
+    return () => {
+      active = false;
+    };
   }, [open]);
 
   return (
@@ -204,6 +233,20 @@ function HamburgerMenu() {
       </button>
       {open ? (
         <div className="absolute right-0 z-50 mt-3 w-52 overflow-hidden rounded-2xl bg-card py-2 shadow-[0_10px_40px_rgba(0,0,0,0.14)] ring-1 ring-black/5">
+          <Link
+            to="/inbox"
+            onClick={() => setOpen(false)}
+            className="block px-5 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            Inbox{unread.inbox ? ` (${unread.inbox})` : ""}
+          </Link>
+          <Link
+            to="/notifications"
+            onClick={() => setOpen(false)}
+            className="block px-5 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            Notifications{unread.notifications ? ` (${unread.notifications})` : ""}
+          </Link>
           <Link
             to="/owners"
             onClick={() => setOpen(false)}

@@ -17,6 +17,8 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CreatorRouteImport } from './routes/creator'
 import { Route as FaqRouteImport } from './routes/faq'
+import { Route as InboxRouteImport } from './routes/inbox'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OwnersRouteImport } from './routes/owners'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -69,6 +71,16 @@ const CreatorRoute = CreatorRouteImport.update({
 const FaqRoute = FaqRouteImport.update({
   id: '/faq',
   path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InboxRoute = InboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OwnersRoute = OwnersRouteImport.update({
@@ -146,6 +158,8 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/creator': typeof CreatorRoute
   '/faq': typeof FaqRoute
+  '/inbox': typeof InboxRoute
+  '/notifications': typeof NotificationsRoute
   '/owners': typeof OwnersRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -169,6 +183,8 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/creator': typeof CreatorRoute
   '/faq': typeof FaqRoute
+  '/inbox': typeof InboxRoute
+  '/notifications': typeof NotificationsRoute
   '/owners': typeof OwnersRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -193,6 +209,8 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/creator': typeof CreatorRoute
   '/faq': typeof FaqRoute
+  '/inbox': typeof InboxRoute
+  '/notifications': typeof NotificationsRoute
   '/owners': typeof OwnersRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -218,6 +236,8 @@ export interface FileRouteTypes {
     | '/contact'
     | '/creator'
     | '/faq'
+    | '/inbox'
+    | '/notifications'
     | '/owners'
     | '/privacy'
     | '/reset-password'
@@ -241,6 +261,8 @@ export interface FileRouteTypes {
     | '/contact'
     | '/creator'
     | '/faq'
+    | '/inbox'
+    | '/notifications'
     | '/owners'
     | '/privacy'
     | '/reset-password'
@@ -264,6 +286,8 @@ export interface FileRouteTypes {
     | '/contact'
     | '/creator'
     | '/faq'
+    | '/inbox'
+    | '/notifications'
     | '/owners'
     | '/privacy'
     | '/reset-password'
@@ -288,6 +312,8 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   CreatorRoute: typeof CreatorRoute
   FaqRoute: typeof FaqRoute
+  InboxRoute: typeof InboxRoute
+  NotificationsRoute: typeof NotificationsRoute
   OwnersRoute: typeof OwnersRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -359,6 +385,20 @@ declare module '@tanstack/react-router' {
       path: '/faq'
       fullPath: '/faq'
       preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inbox': {
+      id: '/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof InboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/owners': {
@@ -464,6 +504,8 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   CreatorRoute: CreatorRoute,
   FaqRoute: FaqRoute,
+  InboxRoute: InboxRoute,
+  NotificationsRoute: NotificationsRoute,
   OwnersRoute: OwnersRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,

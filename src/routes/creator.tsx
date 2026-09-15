@@ -198,6 +198,16 @@ function CreatorPage() {
       <p className="mt-4 text-muted-foreground">
         Connect X to confirm your identity, then add your profile to SocialBid.
       </p>
+      {session ? (
+        <div className="mt-5 flex flex-wrap gap-3">
+          <a href="/inbox" className="btn-outline-ink">
+            Inbox
+          </a>
+          <a href="/notifications" className="btn-outline-ink">
+            Notifications
+          </a>
+        </div>
+      ) : null}
 
       {message ? <div className="panel mt-6 px-4 py-3 text-sm font-medium">{message}</div> : null}
 

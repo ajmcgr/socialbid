@@ -1,8 +1,12 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { getSupabase } from "@/integrations/supabase/browser";
+import { z } from "zod";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: z.object({
+    next: z.enum(["/admin", "/inbox", "/notifications"]).optional().catch(undefined),
+  }),
   head: () => ({
     meta: [
       { title: "Sign In — SocialBid" },
@@ -18,7 +22,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function Auth() {
-  const navigate = useNavigate();
+  const { next = "/admin" } = Route.useSearch();
   const [mode, setMode] = useState<"in" | "up" | "reset">("in");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -52,13 +56,13 @@ function Auth() {
         : await sb.auth.signUp({
             email,
             password,
-            options: { emailRedirectTo: window.location.origin + "/admin" },
+            options: { emailRedirectTo: window.location.origin + next },
           });
     setBusy(false);
     if (error) setMsg(error.message);
     else if (mode === "up") setMsg("Check your email to confirm your account.");
     else if (!data.session) setMsg("Please confirm your email, then sign in again.");
-    else navigate({ to: "/admin", replace: true });
+    else window.location.assign(next);
   }
 
   return (

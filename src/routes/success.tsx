@@ -79,14 +79,18 @@ function Success() {
         Purchase successful
       </h1>
       <div className="panel mt-6 px-5 py-4">
-        <p className="font-semibold">Your sponsored placement is live.</p>
+        <p className="font-semibold">You're the current sponsor.</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          It's showing on this creator's SocialBid profile right now, and stays there until
-          somebody pays more.
+          You now hold the sponsorship spot for @{result.creatorHandle}. It's showing on this
+          creator's SocialBid profile right now, and stays there until somebody pays more.
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
           Your message and link appear with a “Sponsored:” label so the placement is clearly
           disclosed.
+        </p>
+        <p className="mt-2 text-sm font-semibold">
+          Messaging with this creator is now unlocked permanently—even if another sponsor takes the
+          public spot.
         </p>
       </div>
       {result.globalRank === 1 ? (
@@ -132,6 +136,9 @@ function Success() {
         </a>
         <Link to="/u/$username" params={{ username: result.slug }} className="btn-outline-ink">
           View the profile
+        </Link>
+        <Link to="/inbox" className="btn-outline-ink">
+          Message the creator
         </Link>
       </div>
 
