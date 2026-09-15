@@ -24,20 +24,20 @@ export type PayoutStatus = {
   }[];
 };
 
-async function creatorFromToken() {
-  const [{ admin }, { creatorSessionToken }] = await Promise.all([
+async function creatorFromSession() {
+  const [{ admin }, { resolveCreatorSession }] = await Promise.all([
     import("./db.server"),
     import("./creator-session.server"),
   ]);
   const db = admin();
-  const token = creatorSessionToken();
-  if (!token) return { db, creator: null };
+  const session = await resolveCreatorSession(db);
+  if (!session) return { db, creator: null };
   const { data } = await db
     .from("creators")
     .select(
       "id, username, banned, stripe_account_id, stripe_payouts_enabled, stripe_details_submitted",
     )
-    .eq("session_token", token)
+    .eq("user_id", session.userId)
     .maybeSingle();
   return { db, creator: data };
 }
@@ -45,7 +45,7 @@ async function creatorFromToken() {
 export const getPayoutStatus = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => creatorSessionIn.parse(input))
   .handler(async ({ data }): Promise<PayoutStatus | null> => {
-    const { db, creator } = await creatorFromToken();
+    const { db, creator } = await creatorFromSession();
     if (!creator) return null;
 
     const { data: rows } = await db
@@ -88,7 +88,7 @@ export const getPayoutStatus = createServerFn({ method: "POST" })
 export const startPayoutOnboarding = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => creatorSessionIn.parse(input))
   .handler(async ({ data }) => {
-    const { db, creator } = await creatorFromToken();
+    const { db, creator } = await creatorFromSession();
     if (!creator || creator.banned) return { error: "Session expired. Connect X again." } as const;
     if (!process.env["STRIPE_SECRET_KEY"])
       return { error: "Payouts aren't configured yet." } as const;
@@ -118,7 +118,7 @@ export const startPayoutOnboarding = createServerFn({ method: "POST" })
 export const refreshPayoutAccount = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => creatorSessionIn.parse(input))
   .handler(async ({ data }) => {
-    const { db, creator } = await creatorFromToken();
+    const { db, creator } = await creatorFromSession();
     if (!creator?.stripe_account_id) return { ok: false } as const;
     const { retrieveAccount } = await import("./stripe.server");
     try {
@@ -143,7 +143,7 @@ export const refreshPayoutAccount = createServerFn({ method: "POST" })
 export const payoutDashboardLink = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => creatorSessionIn.parse(input))
   .handler(async ({ data }) => {
-    const { creator } = await creatorFromToken();
+    const { creator } = await creatorFromSession();
     if (!creator?.stripe_account_id) return { error: "No payout account yet." } as const;
     const { createLoginLink } = await import("./stripe.server");
     try {

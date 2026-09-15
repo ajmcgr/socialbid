@@ -11,6 +11,12 @@ type Actor = {
   avatarUrl: string | null;
 };
 
+type AccountAccess = {
+  userId: string;
+  creators: Actor[];
+  sponsors: Actor[];
+};
+
 export type InboxConversation = {
   id: string;
   actorKind: MessagingActorKind;
@@ -125,102 +131,60 @@ function detectAttachmentType(bytes: Uint8Array): AttachmentMimeType | null {
   return null;
 }
 
-async function resolveCreator(db: SupabaseClient) {
-  const { creatorSessionToken } = await import("./creator-session.server");
-  const sessionToken = creatorSessionToken();
-  if (!sessionToken) return null;
-  const { data } = await db
-    .from("creators")
-    .select("id, display_name, username, x_profile_image_url")
-    .eq("session_token", sessionToken)
-    .maybeSingle();
-  if (!data) return null;
-  return {
-    kind: "creator" as const,
-    id: String(data.id),
-    name: String(data.display_name),
-    avatarUrl: (data.x_profile_image_url as string | null) ?? null,
-  };
-}
-
-/**
- * Claims a buyer record only through a confirmed Supabase Auth email matching
- * the checkout email. Company names and client-supplied buyer IDs are never
- * accepted as proof of sponsor identity.
- */
-async function resolveSponsor(
+async function resolveAccountAccess(
   db: SupabaseClient,
   token: string | null | undefined,
-): Promise<Actor | null> {
-  if (!token) return null;
-  const { data: authData, error: authError } = await db.auth.getUser(token);
-  const user = authData.user;
-  const email = user?.email?.trim().toLowerCase();
-  if (authError || !user || !email || !user.email_confirmed_at) return null;
-
-  let { data: buyer } = await db
-    .from("buyers")
-    .select("id, user_id, company_name, email")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!buyer) {
-    const byEmail = await db
-      .from("buyers")
-      .select("id, user_id, company_name, email")
-      .eq("email", email)
-      .maybeSingle();
-    buyer = byEmail.data;
-  }
-  if (!buyer || String(buyer.email).trim().toLowerCase() !== email) return null;
-  if (buyer.user_id && buyer.user_id !== user.id) return null;
-
-  if (!buyer.user_id) {
-    const { data: bound, error } = await db
-      .from("buyers")
-      .update({ user_id: user.id })
-      .eq("id", buyer.id)
-      .is("user_id", null)
-      .select("id, user_id, company_name, email")
-      .maybeSingle();
-    if (error) throw new Error("Sponsor identity could not be linked.");
-    if (!bound) {
-      const { data: raced } = await db
-        .from("buyers")
-        .select("id, user_id, company_name, email")
-        .eq("id", buyer.id)
-        .maybeSingle();
-      if (!raced || raced.user_id !== user.id) return null;
-      buyer = raced;
-    } else {
-      buyer = bound;
-    }
-  }
-
+): Promise<AccountAccess | null> {
+  const { resolveCanonicalAccount } = await import("./account.server");
+  const account = await resolveCanonicalAccount(db, token);
+  if (!account) return null;
+  // A guest claim is the only automatic linkage path. It is an HttpOnly,
+  // one-time capability bound to an exact successfully applied payment/buyer.
+  const { consumeGuestBuyerClaim } = await import("./account-claims.server");
+  await consumeGuestBuyerClaim(db, account.userId);
+  const [{ data: creatorRows, error: creatorError }, { data: buyerRows, error: buyerError }] =
+    await Promise.all([
+      db
+        .from("creators")
+        .select("id, display_name, username, x_profile_image_url")
+        .eq("user_id", account.userId),
+      db.from("buyers").select("id, company_name, email").eq("user_id", account.userId),
+    ]);
+  if (creatorError || buyerError) throw new Error("SocialBid account could not be resolved.");
   return {
-    kind: "sponsor",
-    id: String(buyer.id),
-    name: String(buyer.company_name || email),
-    avatarUrl: null,
+    userId: account.userId,
+    creators: (creatorRows ?? []).map((row) => ({
+      kind: "creator" as const,
+      id: String(row.id),
+      name: String(row.display_name),
+      avatarUrl: (row.x_profile_image_url as string | null) ?? null,
+    })),
+    sponsors: (buyerRows ?? []).map((row) => ({
+      kind: "sponsor" as const,
+      id: String(row.id),
+      name: String(row.company_name || row.email || "Sponsor"),
+      avatarUrl: null,
+    })),
   };
 }
 
-async function resolveActors(token: string | null | undefined) {
+async function resolveAccess(token: string | null | undefined) {
   const { admin } = await import("./db.server");
   const db = admin();
-  const [creator, sponsor] = await Promise.all([resolveCreator(db), resolveSponsor(db, token)]);
-  return { db, creator, sponsor };
+  const access = await resolveAccountAccess(db, token);
+  return { db, access };
 }
 
-function chooseActor(
-  creator: Actor | null,
-  sponsor: Actor | null,
+function chooseActorForConversation(
+  access: AccountAccess,
+  conversation: Record<string, unknown>,
   requested: MessagingActorKind | null | undefined,
 ) {
-  if (requested === "creator" && creator) return creator;
-  if (requested === "sponsor" && sponsor) return sponsor;
-  if (requested) return null;
-  return creator ?? sponsor;
+  const creator = access.creators.find((item) => item.id === conversation["creator_id"]);
+  const sponsor = access.sponsors.find((item) => item.id === conversation["buyer_id"]);
+  if (requested === "creator") return creator ?? null;
+  if (requested === "sponsor") return sponsor ?? null;
+  return creator ?? sponsor ?? null;
 }
 
 async function hasSponsorshipConnection(db: SupabaseClient, creatorId: string, buyerId: string) {
@@ -305,24 +269,26 @@ async function syncConnectionsForActor(db: SupabaseClient, actor: Actor) {
   }
 }
 
-async function authorizedConversation(db: SupabaseClient, actor: Actor, conversationId: string) {
+async function authorizedConversation(
+  db: SupabaseClient,
+  access: AccountAccess,
+  conversationId: string,
+  requested?: MessagingActorKind | null,
+) {
   const { data: conversation } = await db
     .from("social_bid_conversations")
     .select("*")
     .eq("id", conversationId)
     .maybeSingle();
   if (!conversation) return null;
-  const belongs =
-    actor.kind === "creator"
-      ? conversation.creator_id === actor.id
-      : conversation.buyer_id === actor.id;
-  if (!belongs) return null;
+  const actor = chooseActorForConversation(access, conversation, requested);
+  if (!actor) return null;
   const entitled = await hasSponsorshipConnection(
     db,
     String(conversation.creator_id),
     String(conversation.buyer_id),
   );
-  return entitled ? conversation : null;
+  return entitled ? { conversation, actor } : null;
 }
 
 async function loadConversationForActor(
@@ -429,11 +395,12 @@ async function loadConversationForActor(
 export const getMessagingContext = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => authInput.parse(input))
   .handler(async ({ data }) => {
-    const { db, creator, sponsor } = await resolveActors(data.token);
-    const actors = [creator, sponsor].filter(Boolean) as Actor[];
+    const { db, access } = await resolveAccess(data.token);
+    const actors = access ? [...access.creators, ...access.sponsors] : [];
     if (!actors.length) {
       return {
         actor: null,
+        accountAuthenticated: Boolean(access),
         availableKinds: [] as MessagingActorKind[],
         conversations: [] as InboxConversation[],
         notifications: [] as InboxNotification[],
@@ -441,9 +408,8 @@ export const getMessagingContext = createServerFn({ method: "POST" })
       };
     }
 
-    const availableKinds = [creator && "creator", sponsor && "sponsor"].filter(
-      Boolean,
-    ) as MessagingActorKind[];
+    // A valid account remains signed in even before it owns a creator/buyer.
+    const availableKinds = [...new Set(actors.map((actor) => actor.kind))];
     await Promise.all(actors.map((actor) => syncConnectionsForActor(db, actor)));
 
     const conversationMap = new Map<string, InboxConversation>();
@@ -497,6 +463,7 @@ export const getMessagingContext = createServerFn({ method: "POST" })
 
     return {
       actor: { kind: actor.kind, name: actor.name, avatarUrl: actor.avatarUrl },
+      accountAuthenticated: true,
       availableKinds,
       conversations,
       notifications,
@@ -507,11 +474,16 @@ export const getMessagingContext = createServerFn({ method: "POST" })
 export const getConversationMessages = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => conversationInput.parse(input))
   .handler(async ({ data }) => {
-    const { db, creator, sponsor } = await resolveActors(data.token);
-    const actor = chooseActor(creator, sponsor, data.actorKind);
-    if (!actor) return { error: "Sign in to view this conversation." } as const;
-    const conversation = await authorizedConversation(db, actor, data.conversationId);
-    if (!conversation) return { error: "Conversation unavailable." } as const;
+    const { db, access } = await resolveAccess(data.token);
+    if (!access) return { error: "Sign in to view this conversation." } as const;
+    const authorized = await authorizedConversation(
+      db,
+      access,
+      data.conversationId,
+      data.actorKind,
+    );
+    if (!authorized) return { error: "Conversation unavailable." } as const;
+    const { conversation, actor } = authorized;
     const { data: rows, error } = await db
       .from("social_bid_messages")
       .select("id, sender_kind, body, created_at")
@@ -577,11 +549,16 @@ const readStateInput = conversationInput.extend({ unread: z.boolean() });
 export const setConversationReadState = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => readStateInput.parse(input))
   .handler(async ({ data }) => {
-    const { db, creator, sponsor } = await resolveActors(data.token);
-    const actor = chooseActor(creator, sponsor, data.actorKind);
-    if (!actor) return { error: "Sign in to manage this conversation." } as const;
-    const conversation = await authorizedConversation(db, actor, data.conversationId);
-    if (!conversation) return { error: "Conversation unavailable." } as const;
+    const { db, access } = await resolveAccess(data.token);
+    if (!access) return { error: "Sign in to manage this conversation." } as const;
+    const authorized = await authorizedConversation(
+      db,
+      access,
+      data.conversationId,
+      data.actorKind,
+    );
+    if (!authorized) return { error: "Conversation unavailable." } as const;
+    const { actor } = authorized;
     const readColumn = actor.kind === "creator" ? "creator_last_read_at" : "sponsor_last_read_at";
     const markedUnreadColumn =
       actor.kind === "creator" ? "creator_marked_unread_at" : "sponsor_marked_unread_at";
@@ -607,11 +584,16 @@ const attachmentUploadInput = conversationInput.extend({
 export const createAttachmentUpload = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => attachmentUploadInput.parse(input))
   .handler(async ({ data }) => {
-    const { db, creator, sponsor } = await resolveActors(data.token);
-    const actor = chooseActor(creator, sponsor, data.actorKind);
-    if (!actor) return { error: "Sign in to attach a file." } as const;
-    const conversation = await authorizedConversation(db, actor, data.conversationId);
-    if (!conversation) return { error: "Conversation unavailable." } as const;
+    const { db, access } = await resolveAccess(data.token);
+    if (!access) return { error: "Sign in to attach a file." } as const;
+    const authorized = await authorizedConversation(
+      db,
+      access,
+      data.conversationId,
+      data.actorKind,
+    );
+    if (!authorized) return { error: "Conversation unavailable." } as const;
+    const { conversation, actor } = authorized;
     if (conversation.blocked_by_creator_at || conversation.blocked_by_sponsor_at)
       return { error: "Messaging is blocked for this conversation." } as const;
 
@@ -652,11 +634,16 @@ const attachmentActionInput = conversationInput.extend({ attachmentId: z.string(
 export const cancelAttachmentUpload = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => attachmentActionInput.parse(input))
   .handler(async ({ data }) => {
-    const { db, creator, sponsor } = await resolveActors(data.token);
-    const actor = chooseActor(creator, sponsor, data.actorKind);
-    if (!actor) return { error: "Sign in to manage attachments." } as const;
-    const conversation = await authorizedConversation(db, actor, data.conversationId);
-    if (!conversation) return { error: "Conversation unavailable." } as const;
+    const { db, access } = await resolveAccess(data.token);
+    if (!access) return { error: "Sign in to manage attachments." } as const;
+    const authorized = await authorizedConversation(
+      db,
+      access,
+      data.conversationId,
+      data.actorKind,
+    );
+    if (!authorized) return { error: "Conversation unavailable." } as const;
+    const { actor } = authorized;
     const { data: attachment } = await db
       .from("social_bid_message_attachments")
       .select("id, storage_path")
@@ -683,9 +670,8 @@ export const cancelAttachmentUpload = createServerFn({ method: "POST" })
 export const getAttachmentDownloadUrl = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => attachmentActionInput.parse(input))
   .handler(async ({ data }) => {
-    const { db, creator, sponsor } = await resolveActors(data.token);
-    const actor = chooseActor(creator, sponsor, data.actorKind);
-    if (!actor) return { error: "Sign in to open attachments." } as const;
+    const { db, access } = await resolveAccess(data.token);
+    if (!access) return { error: "Sign in to open attachments." } as const;
     const { data: attachment } = await db
       .from("social_bid_message_attachments")
       .select("conversation_id, storage_path, original_filename, mime_type")
@@ -694,8 +680,13 @@ export const getAttachmentDownloadUrl = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!attachment || String(attachment.conversation_id) !== data.conversationId)
       return { error: "Attachment unavailable." } as const;
-    const conversation = await authorizedConversation(db, actor, data.conversationId);
-    if (!conversation) return { error: "Attachment unavailable." } as const;
+    const authorized = await authorizedConversation(
+      db,
+      access,
+      data.conversationId,
+      data.actorKind,
+    );
+    if (!authorized) return { error: "Attachment unavailable." } as const;
     const signed = await db.storage
       .from(MESSAGE_ATTACHMENT_BUCKET)
       .createSignedUrl(String(attachment.storage_path), 60, {
@@ -725,11 +716,16 @@ const sendInput = conversationInput
 export const sendInboxMessage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => sendInput.parse(input))
   .handler(async ({ data }) => {
-    const { db, creator, sponsor } = await resolveActors(data.token);
-    const actor = chooseActor(creator, sponsor, data.actorKind);
-    if (!actor) return { error: "Sign in to send a message." } as const;
-    const conversation = await authorizedConversation(db, actor, data.conversationId);
-    if (!conversation) return { error: "Conversation unavailable." } as const;
+    const { db, access } = await resolveAccess(data.token);
+    if (!access) return { error: "Sign in to send a message." } as const;
+    const authorized = await authorizedConversation(
+      db,
+      access,
+      data.conversationId,
+      data.actorKind,
+    );
+    if (!authorized) return { error: "Conversation unavailable." } as const;
+    const { conversation, actor } = authorized;
     if (conversation.blocked_by_creator_at || conversation.blocked_by_sponsor_at)
       return { error: "Messaging is blocked for this conversation." } as const;
 
@@ -809,11 +805,16 @@ const blockInput = conversationInput.extend({ blocked: z.boolean() });
 export const setConversationBlocked = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => blockInput.parse(input))
   .handler(async ({ data }) => {
-    const { db, creator, sponsor } = await resolveActors(data.token);
-    const actor = chooseActor(creator, sponsor, data.actorKind);
-    if (!actor) return { error: "Sign in to manage this conversation." } as const;
-    const conversation = await authorizedConversation(db, actor, data.conversationId);
-    if (!conversation) return { error: "Conversation unavailable." } as const;
+    const { db, access } = await resolveAccess(data.token);
+    if (!access) return { error: "Sign in to manage this conversation." } as const;
+    const authorized = await authorizedConversation(
+      db,
+      access,
+      data.conversationId,
+      data.actorKind,
+    );
+    if (!authorized) return { error: "Conversation unavailable." } as const;
+    const { actor } = authorized;
     const column = actor.kind === "creator" ? "blocked_by_creator_at" : "blocked_by_sponsor_at";
     const { error } = await db
       .from("social_bid_conversations")
@@ -829,11 +830,16 @@ const reportInput = conversationInput.extend({ reason: z.string().trim().max(500
 export const reportConversation = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => reportInput.parse(input))
   .handler(async ({ data }) => {
-    const { db, creator, sponsor } = await resolveActors(data.token);
-    const actor = chooseActor(creator, sponsor, data.actorKind);
-    if (!actor) return { error: "Sign in to report this conversation." } as const;
-    const conversation = await authorizedConversation(db, actor, data.conversationId);
-    if (!conversation) return { error: "Conversation unavailable." } as const;
+    const { db, access } = await resolveAccess(data.token);
+    if (!access) return { error: "Sign in to report this conversation." } as const;
+    const authorized = await authorizedConversation(
+      db,
+      access,
+      data.conversationId,
+      data.actorKind,
+    );
+    if (!authorized) return { error: "Conversation unavailable." } as const;
+    const { actor } = authorized;
     const { error } = await db.from("social_bid_conversation_reports").insert({
       conversation_id: data.conversationId,
       reporter_kind: actor.kind,
@@ -847,13 +853,25 @@ const notificationInput = authInput.extend({ notificationId: z.string().uuid().o
 export const markNotificationsRead = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => notificationInput.parse(input))
   .handler(async ({ data }) => {
-    const { db, creator, sponsor } = await resolveActors(data.token);
-    const requestedActor = chooseActor(creator, sponsor, data.actorKind);
-    const actors = data.actorKind
-      ? requestedActor
-        ? [requestedActor]
-        : []
-      : ([creator, sponsor].filter(Boolean) as Actor[]);
+    const { db, access } = await resolveAccess(data.token);
+    if (!access) return { error: "Sign in to manage notifications." } as const;
+    let actors = [...access.creators, ...access.sponsors];
+    if (data.notificationId) {
+      const notification = await db
+        .from("social_bid_notifications")
+        .select("creator_id, buyer_id")
+        .eq("id", data.notificationId)
+        .maybeSingle();
+      const notificationRow = notification.data;
+      if (!notificationRow) return { error: "Notification unavailable." } as const;
+      actors = actors.filter((actor) =>
+        actor.kind === "creator"
+          ? actor.id === notificationRow.creator_id
+          : actor.id === notificationRow.buyer_id,
+      );
+    } else if (data.actorKind) {
+      actors = actors.filter((actor) => actor.kind === data.actorKind);
+    }
     if (!actors.length) return { error: "Sign in to manage notifications." } as const;
     for (const actor of actors) {
       const column = actor.kind === "creator" ? "creator_id" : "buyer_id";

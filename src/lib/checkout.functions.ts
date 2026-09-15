@@ -16,7 +16,7 @@ const schema = z.object({
     .positive()
     .refine((value) => value % 100 === 0, "Bid must be a whole-dollar amount."),
   agreed: z.boolean(),
-  creatorToken: z.string().max(200).optional().nullable(),
+  authToken: z.string().max(5000).optional().nullable(),
 });
 
 export const startCheckout = createServerFn({ method: "POST" })
@@ -27,6 +27,9 @@ export const startCheckout = createServerFn({ method: "POST" })
     const { createCheckoutSession } = await import("./stripe.server");
     const { CURRENT_PLACEMENT_FORMAT, validatePlacement } = await import("./placement");
     const db = admin();
+
+    const { resolveCanonicalAccount } = await import("./account.server");
+    const account = await resolveCanonicalAccount(db, data.authToken);
 
     if (!data.agreed) return { error: "You must accept the terms." };
 
@@ -42,21 +45,10 @@ export const startCheckout = createServerFn({ method: "POST" })
     if (!creator || creator.banned) return { error: "Listing unavailable." };
     if (!creator.x_account_verified) return { error: "This creator has disconnected X." };
 
-    // Self-bidding guard. The HttpOnly session cookie is set only by the
-    // trusted X OAuth callback; request-body identity fields are never used.
-    const { getRequest } = await import("@tanstack/react-start/server");
-    const creatorSession = getRequest()
-      .headers.get("cookie")
-      ?.match(/(?:^|;\s*)bmb_creator_session=([^;]+)/)?.[1];
-    if (creatorSession) {
-      const { data: currentCreator } = await db
-        .from("creators")
-        .select("user_id")
-        .eq("session_token", decodeURIComponent(creatorSession))
-        .maybeSingle();
-      if (currentCreator?.user_id && currentCreator.user_id === creator.user_id)
-        return { error: "You can't sponsor your own profile." };
-    }
+    // Self-bidding guard. Resolve the server-only hashed session and compare
+    // its canonical user ID; browser-supplied identity fields are never proof.
+    if (account?.userId === creator.user_id)
+      return { error: "You can't sponsor your own profile." };
 
     // Legacy advisory checks only; never used as the authoritative decision.
     const norm = (v: string | null | undefined) => (v ?? "").trim().replace(/^@/, "").toLowerCase();
@@ -64,15 +56,6 @@ export const startCheckout = createServerFn({ method: "POST" })
     const creatorHandles = [creator.x_username, creator.social_handle, creator.username].map(norm);
     if (buyerHandle && creatorHandles.includes(buyerHandle))
       return { error: "You can't sponsor your own profile." };
-    if (data.creatorToken) {
-      const { data: self } = await db
-        .from("creators")
-        .select("id")
-        .eq("session_token", data.creatorToken)
-        .maybeSingle();
-      if (self?.id === creator.id) return { error: "You can't sponsor your own profile." };
-    }
-
     const { data: listing } = await db
       .from("listings")
       .select("id, status, starting_price_cents, minimum_increase_percentage")
@@ -91,22 +74,50 @@ export const startCheckout = createServerFn({ method: "POST" })
     if (!Number.isSafeInteger(amountCents) || amountCents < requiredCents)
       return { error: `Your bid must be at least $${(requiredCents / 100).toFixed(2)}.` };
 
-    // buyer record
+    // Buyer is a commercial identity owned by the canonical account, not the
+    // account itself. Guests only reuse an equivalent unclaimed identity.
     const email = data.email.trim().toLowerCase();
-    const { data: existingBuyer } = await db
+    const companyName = data.companyName.trim();
+    let buyerQuery = db
       .from("buyers")
-      .select("id, banned")
-      .eq("email", email)
-      .maybeSingle();
+      .select("id, banned, user_id, company_name")
+      .eq("email", email);
+    buyerQuery = account
+      ? buyerQuery.eq("user_id", account.userId)
+      : buyerQuery.is("user_id", null);
+    const { data: buyerCandidates, error: buyerLookupError } = await buyerQuery;
+    if (buyerLookupError) return { error: "Could not resolve sponsor identity." };
+    const normalizeIdentity = (value: string | null | undefined) =>
+      (value ?? "").trim().toLocaleLowerCase("en");
+    const existingBuyer = (buyerCandidates ?? []).find(
+      (candidate) => normalizeIdentity(candidate.company_name) === normalizeIdentity(companyName),
+    );
     if (existingBuyer?.banned) return { error: "This account cannot purchase." };
     let buyerId = existingBuyer?.id as string | undefined;
     if (!buyerId) {
-      const { data: created } = await db
+      const { data: created, error: createBuyerError } = await db
         .from("buyers")
-        .insert({ email, company_name: data.companyName, x_handle: data.xHandle ?? null })
+        .insert({
+          email,
+          company_name: companyName,
+          x_handle: data.xHandle ?? null,
+          user_id: account?.userId ?? null,
+        })
         .select("id")
         .single();
       buyerId = created?.id;
+      if (createBuyerError || !buyerId) {
+        let racedQuery = db.from("buyers").select("id, company_name").eq("email", email);
+        racedQuery = account
+          ? racedQuery.eq("user_id", account.userId)
+          : racedQuery.is("user_id", null);
+        const raced = await racedQuery;
+        buyerId = raced.data?.find(
+          (candidate) =>
+            normalizeIdentity(candidate.company_name) === normalizeIdentity(companyName),
+        )?.id;
+      }
+      if (!buyerId) return { error: "Could not create sponsor identity." };
     }
 
     // Website-only placement validation. The creator's X bio length is irrelevant.
@@ -131,11 +142,23 @@ export const startCheckout = createServerFn({ method: "POST" })
         destination_url: destination,
         logo_url: logo,
         x_handle: data.xHandle ?? null,
+        initiated_by_user_id: account?.userId ?? null,
         status: "created",
       })
       .select("id")
       .single();
     if (payErr || !payment) return { error: "Could not start checkout." };
+
+    let guestClaimToken: string | null = null;
+    if (!account) {
+      try {
+        const { createGuestBuyerClaim } = await import("./account-claims.server");
+        guestClaimToken = await createGuestBuyerClaim(db, String(payment.id), String(buyerId));
+      } catch {
+        await db.from("payments").update({ status: "failed" }).eq("id", payment.id);
+        return { error: "Could not securely prepare guest checkout." };
+      }
+    }
 
     const base = baseUrl();
     try {
@@ -157,6 +180,10 @@ export const startCheckout = createServerFn({ method: "POST" })
         listing_id: listing.id,
         props: { amount_cents: amountCents, quoted_min_cents: requiredCents },
       });
+      if (guestClaimToken) {
+        const { setGuestBuyerClaimCookie } = await import("./account-claims.server");
+        setGuestBuyerClaimCookie(guestClaimToken);
+      }
       return { url: session["url"] as string, amountCents };
     } catch (e) {
       await db

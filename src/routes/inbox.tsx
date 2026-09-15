@@ -17,6 +17,7 @@ import {
 import { ConversationSummary, MessagingSignIn } from "@/components/MessagingShell";
 import { useMessagingContext } from "@/hooks/useMessagingContext";
 import { getSupabase } from "@/integrations/supabase/browser";
+import { completeBuyerRecovery, requestBuyerRecovery } from "@/lib/buyer-recovery.functions";
 
 const attachmentTypes = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
 const maxAttachmentBytes = 10 * 1024 * 1024;
@@ -25,7 +26,9 @@ type SelectedAttachment = { file: File; previewUrl: string | null };
 
 export const Route = createFileRoute("/inbox")({
   ssr: false,
-  validateSearch: z.object({ conversation: z.string().uuid().optional().catch(undefined) }),
+  validateSearch: z.object({
+    conversation: z.string().uuid().optional().catch(undefined),
+  }),
   head: () => ({
     meta: [
       { title: "Inbox — SocialBid" },
@@ -48,6 +51,8 @@ function InboxPage() {
   const setBlocked = useServerFn(setConversationBlocked);
   const setReadState = useServerFn(setConversationReadState);
   const report = useServerFn(reportConversation);
+  const requestRecovery = useServerFn(requestBuyerRecovery);
+  const completeRecovery = useServerFn(completeBuyerRecovery);
   const [messages, setMessages] = useState<InboxMessage[]>([]);
   const [blocked, setBlockedState] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -56,6 +61,7 @@ function InboxPage() {
   const [selectedAttachments, setSelectedAttachments] = useState<SelectedAttachment[]>([]);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [draftNonce, setDraftNonce] = useState(() => crypto.randomUUID());
+  const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
 
   const selectedId = useMemo(() => {
     if (
@@ -100,6 +106,30 @@ function InboxPage() {
       return [];
     });
   }, [selectedId]);
+
+  useEffect(() => {
+    if (!context?.accountAuthenticated) return;
+    let active = true;
+    void completeRecovery({ data: { token } }).then(async (result) => {
+      if (!active) return;
+      if (result.ok) {
+        setRecoveryMessage("Your previous sponsorships are now in this Inbox.");
+        await refresh();
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [completeRecovery, context?.accountAuthenticated, refresh, token]);
+
+  async function submitRecovery(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const email = String(new FormData(form).get("recovery-email") ?? "");
+    const result = await requestRecovery({ data: { token, email } });
+    setRecoveryMessage(result.message);
+    form.reset();
+  }
 
   function selectFiles(files: FileList | null) {
     if (!files) return;
@@ -303,6 +333,30 @@ function InboxPage() {
       {error ? <p className="mt-6 text-sm text-destructive">{error}</p> : null}
       {!context ? <p className="mt-8 text-muted-foreground">Loading inbox…</p> : null}
       {context && !context.actor ? <MessagingSignIn /> : null}
+      {context?.accountAuthenticated ? (
+        <details className="panel mt-6 px-5 py-4">
+          <summary className="cursor-pointer text-sm font-bold">Claim previous sponsorship</summary>
+          <form onSubmit={submitRecovery} className="mt-4 flex flex-wrap gap-3">
+            <label htmlFor="recovery-email" className="sr-only">
+              Historical sponsorship email
+            </label>
+            <input
+              id="recovery-email"
+              name="recovery-email"
+              type="email"
+              required
+              placeholder="Email used at checkout"
+              className="field min-w-60 flex-1"
+            />
+            <button type="submit" className="btn-outline-ink">
+              Send verification
+            </button>
+          </form>
+          {recoveryMessage ? (
+            <p className="mt-3 text-sm text-muted-foreground">{recoveryMessage}</p>
+          ) : null}
+        </details>
+      ) : null}
       {context?.actor ? (
         <>
           {!context.conversations.length ? (

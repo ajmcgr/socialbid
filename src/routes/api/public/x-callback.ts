@@ -4,8 +4,7 @@ export const Route = createFileRoute("/api/public/x-callback")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const { exchangeCode, fetchXUser, randomToken, placementPresent } =
-          await import("@/lib/x.server");
+        const { exchangeCode, fetchXUser, placementPresent } = await import("@/lib/x.server");
         const { admin, baseUrl } = await import("@/lib/db.server");
         const db = admin();
         const base = baseUrl();
@@ -46,11 +45,10 @@ export const Route = createFileRoute("/api/public/x-callback")({
         // X user id is the authoritative identity, never the username.
         const { data: existing } = await db
           .from("creators")
-          .select("id, username, session_token, x_bio_verified, user_id")
+          .select("id, username, x_bio_verified, user_id")
           .eq("x_user_id", xUser.id)
           .maybeSingle();
 
-        const sessionToken = (existing?.session_token as string | null) ?? randomToken(32);
         const now = new Date().toISOString();
         const profile = {
           x_user_id: xUser.id,
@@ -62,7 +60,6 @@ export const Route = createFileRoute("/api/public/x-callback")({
           x_account_verified: true,
           x_account_verified_at: now,
           x_bio_snapshot: xUser.description,
-          session_token: sessionToken,
           display_name: xUser.name,
           profile_image_url: xUser.profile_image_url,
           social_platform: "x",
@@ -75,6 +72,7 @@ export const Route = createFileRoute("/api/public/x-callback")({
 
         let creatorId = existing?.id as string | undefined;
         let username = existing?.username as string | undefined;
+        let userId = (existing?.user_id as string | null) ?? null;
 
         if (creatorId) {
           await db.from("creators").update(profile).eq("id", creatorId);
@@ -105,14 +103,14 @@ export const Route = createFileRoute("/api/public/x-callback")({
 
         // X is the trusted identity proof. Bind it once to an internal user so
         // creator-only server checks never need browser-supplied handles/tokens.
-        if (!existing?.user_id && creatorId) {
+        if (!userId && creatorId) {
           const email = `x-${xUser.id}@creator.socialbid.invalid`;
           const { data: createdUser, error: createUserError } = await db.auth.admin.createUser({
             email,
             email_confirm: true,
             user_metadata: { x_user_id: xUser.id, creator_id: creatorId },
           });
-          let userId = createdUser.user?.id ?? null;
+          userId = createdUser.user?.id ?? null;
 
           // Supabase Admin has no direct email lookup. Only after a duplicate
           // creation response do we page through the server-only user list to
@@ -150,14 +148,40 @@ export const Route = createFileRoute("/api/public/x-callback")({
             console.error("creator identity binding failed", createUserError);
             return fail("creator_identity_failed");
           }
-          const { error: bindingError } = await db
+          const { data: boundCreator, error: bindingError } = await db
             .from("creators")
             .update({ user_id: userId })
-            .eq("id", creatorId);
+            .eq("id", creatorId)
+            .is("user_id", null)
+            .select("user_id")
+            .maybeSingle();
           if (bindingError) {
             console.error("creator identity binding write failed", bindingError);
             return fail("creator_identity_failed");
           }
+          if (!boundCreator) {
+            const { data: racedCreator, error: racedError } = await db
+              .from("creators")
+              .select("user_id")
+              .eq("id", creatorId)
+              .maybeSingle();
+            if (racedError || !racedCreator?.user_id) {
+              console.error("creator identity binding race could not be resolved", racedError);
+              return fail("creator_identity_failed");
+            }
+            userId = String(racedCreator.user_id);
+          }
+        }
+
+        if (!userId) return fail("creator_identity_failed");
+
+        let sessionCookie: string;
+        try {
+          const { issueCreatorSession } = await import("@/lib/creator-session.server");
+          sessionCookie = await issueCreatorSession(db, userId);
+        } catch (error) {
+          console.error("creator session creation failed", error);
+          return fail("creator_identity_failed");
         }
 
         // Website-only sponsorships: connecting X verifies identity, which is
@@ -181,7 +205,7 @@ export const Route = createFileRoute("/api/public/x-callback")({
           status: 302,
           headers: {
             Location: `/creator?connected=${encodeURIComponent(xUser.username)}`,
-            "Set-Cookie": `bmb_creator_session=${encodeURIComponent(sessionToken)}; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax`,
+            "Set-Cookie": sessionCookie,
           },
         });
       },

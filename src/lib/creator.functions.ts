@@ -42,21 +42,21 @@ export type CreatorSession = {
 export const getCreatorSession = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => creatorSessionIn.parse(input))
   .handler(async ({ data }): Promise<CreatorSession | null> => {
-    const [{ admin }, { creatorSessionToken }] = await Promise.all([
+    const [{ admin }, { resolveCreatorSession }] = await Promise.all([
       import("./db.server"),
       import("./creator-session.server"),
     ]);
     const { requiredPlacement } = await import("./x.server");
     const db = admin();
-    const token = creatorSessionToken();
-    if (!token) return null;
+    const session = await resolveCreatorSession(db);
+    if (!session) return null;
 
     const { data: c } = await db
       .from("creators")
       .select(
         "id, username, display_name, x_username, x_profile_image_url, x_profile_url, x_follower_count, x_account_verified, x_bio_verified, x_bio_verified_method, x_bio_snapshot, banned",
       )
-      .eq("session_token", token)
+      .eq("user_id", session.userId)
       .maybeSingle();
     if (!c) return null;
 
@@ -154,7 +154,7 @@ const notificationEmailIn = z.object({ email: z.string().trim().max(160) });
 export const updateNotificationEmail = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => notificationEmailIn.parse(input))
   .handler(async ({ data }) => {
-    const [{ admin }, { creatorSessionToken }, { isDeliverableEmail }] = await Promise.all([
+    const [{ admin }, { resolveCreatorSession }, { isDeliverableEmail }] = await Promise.all([
       import("./db.server"),
       import("./creator-session.server"),
       import("./validate"),
@@ -163,13 +163,13 @@ export const updateNotificationEmail = createServerFn({ method: "POST" })
     if (!isDeliverableEmail(email))
       return { error: "Enter a valid email address for notifications." } as const;
 
-    const token = creatorSessionToken();
-    if (!token) return { error: "Session expired. Connect X again." } as const;
     const db = admin();
+    const session = await resolveCreatorSession(db);
+    if (!session) return { error: "Session expired. Connect X again." } as const;
     const { data: creator } = await db
       .from("creators")
       .select("id")
-      .eq("session_token", token)
+      .eq("user_id", session.userId)
       .maybeSingle();
     if (!creator) return { error: "Session expired. Connect X again." } as const;
     const { data: notification, error } = await db
@@ -196,17 +196,17 @@ export const updateNotificationEmail = createServerFn({ method: "POST" })
 export const publishListing = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => creatorSessionIn.parse(input))
   .handler(async ({ data }) => {
-    const [{ admin }, { creatorSessionToken }] = await Promise.all([
+    const [{ admin }, { resolveCreatorSession }] = await Promise.all([
       import("./db.server"),
       import("./creator-session.server"),
     ]);
     const db = admin();
-    const token = creatorSessionToken();
-    if (!token) return { error: "Session expired. Connect X again." } as const;
+    const session = await resolveCreatorSession(db);
+    if (!session) return { error: "Session expired. Connect X again." } as const;
     const { data: c } = await db
       .from("creators")
       .select("id, banned, x_account_verified")
-      .eq("session_token", token)
+      .eq("user_id", session.userId)
       .maybeSingle();
     if (!c || c.banned) return { error: "Session expired. Connect X again." } as const;
     if (!c.x_account_verified) return { error: "Connect X before listing your profile." } as const;
@@ -238,18 +238,18 @@ const disconnectIn = z.object({
 export const disconnectXAccount = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => disconnectIn.parse(input))
   .handler(async ({ data }) => {
-    const [{ admin }, { creatorSessionToken }] = await Promise.all([
+    const [{ admin }, sessionModule] = await Promise.all([
       import("./db.server"),
       import("./creator-session.server"),
     ]);
     const db = admin();
-    const token = creatorSessionToken();
-    if (!token) return { error: "Session expired. Connect X again." } as const;
+    const session = await sessionModule.resolveCreatorSession(db);
+    if (!session) return { error: "Session expired. Connect X again." } as const;
 
     const { data: c } = await db
       .from("creators")
       .select("id")
-      .eq("session_token", token)
+      .eq("user_id", session.userId)
       .maybeSingle();
     if (!c) return { error: "Session expired. Connect X again." } as const;
 
@@ -282,7 +282,6 @@ export const disconnectXAccount = createServerFn({ method: "POST" })
     if (listing) await db.from("listings").update({ status: "disconnected" }).eq("id", listing.id);
 
     const wipe: Record<string, unknown> = {
-      session_token: null,
       updated_at: new Date().toISOString(),
       x_account_verified: false,
       x_account_verified_at: null,
@@ -291,6 +290,10 @@ export const disconnectXAccount = createServerFn({ method: "POST" })
       x_bio_verified_method: null,
     };
     await db.from("creators").update(wipe).eq("id", c.id);
+
+    await sessionModule.revokeCreatorSessions(db, session.userId);
+    const { setResponseHeader } = await import("@tanstack/react-start/server");
+    setResponseHeader("Set-Cookie", sessionModule.clearCreatorSessionCookie());
 
     if (!data.deleteData) return { ok: true, deleted: false, hasObligation } as const;
 

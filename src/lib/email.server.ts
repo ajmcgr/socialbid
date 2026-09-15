@@ -471,3 +471,25 @@ export async function sendPasswordResetEmail(o: {
     { idempotencyKey: o.idempotencyKey, throwOnFailure: true },
   );
 }
+
+export async function sendBuyerRecoveryEmail(o: {
+  to: string;
+  company: string;
+  actionLink: string;
+  idempotencyKey: string;
+}) {
+  return send(
+    o.to,
+    "Recover your SocialBid sponsorships",
+    shell(
+      `
+      ${h1("Confirm your sponsorship history")}
+      ${p(`Use this one-time link to attach <b>${escapeHtml(o.company)}</b> and its eligible sponsorship conversations to the SocialBid account that requested recovery.`)}
+      ${button(o.actionLink, "Recover sponsorships \u2192")}
+      ${p("This link expires in 30 minutes. If you didn't request it, you can ignore this email.")}
+    `,
+      "You received this because sponsorship recovery was requested on SocialBid.",
+    ),
+    { idempotencyKey: o.idempotencyKey, throwOnFailure: true },
+  );
+}

@@ -57,7 +57,10 @@ test("blocking is enforced before message insertion", () => {
 });
 
 test("creator and sponsor conversations are merged and deduplicated by conversation id", () => {
-  assert.match(server, /const actors = \[creator, sponsor\]\.filter\(Boolean\)/);
+  assert.match(
+    server,
+    /const actors = access \? \[\.\.\.access\.creators, \.\.\.access\.sponsors\] : \[\]/,
+  );
   assert.match(server, /const conversationMap = new Map<string, InboxConversation>\(\)/);
   assert.match(server, /if \(conversationMap\.has\(conversationId\)\) continue/);
   assert.match(server, /conversationMap\.set\(conversationId, loaded\)/);
@@ -89,7 +92,10 @@ test("manual read-state mutation remains server-authorized and does not change a
   const start = server.indexOf("export const setConversationReadState");
   const end = server.indexOf("const sendInput", start);
   const action = server.slice(start, end);
-  assert.match(action, /authorizedConversation\(db, actor, data\.conversationId\)/);
+  assert.match(
+    action,
+    /authorizedConversation\(\s*db,\s*access,\s*data\.conversationId,\s*data\.actorKind/,
+  );
   assert.match(action, /creator_marked_unread_at/);
   assert.match(action, /sponsor_marked_unread_at/);
   assert.doesNotMatch(action, /updated_at|social_bid_notifications|sendEmail|Resend/);
@@ -131,7 +137,10 @@ test("attachment upload and download require existing conversation authorization
     const start = server.indexOf(`export const ${functionName}`);
     const next = server.indexOf("export const ", start + 20);
     const body = server.slice(start, next < 0 ? undefined : next);
-    assert.match(body, /authorizedConversation\(db, actor, data\.conversationId\)/);
+    assert.match(
+      body,
+      /authorizedConversation\(\s*db,\s*access,\s*data\.conversationId,\s*data\.actorKind/,
+    );
   }
 });
 

@@ -110,6 +110,9 @@ export function BuyDialog({
     }
     try {
       const logoUrl = await uploadSelectedImage();
+      const { getSupabase } = await import("@/integrations/supabase/browser");
+      const authToken =
+        (await getSupabase()?.auth.getSession())?.data.session?.access_token ?? null;
       const res = await checkout({
         data: {
           username: view.creator.username,
@@ -121,8 +124,7 @@ export function BuyDialog({
           logoUrl,
           bidCents,
           agreed,
-          creatorToken:
-            typeof window === "undefined" ? null : localStorage.getItem("bmb_creator_token"),
+          authToken,
         },
       });
       if ("url" in res && res.url) {
@@ -312,8 +314,8 @@ export function BuyDialog({
               Your sponsorship spot stays live until somebody pays more.
             </p>
             <p className="mt-1 text-muted-foreground">
-              Your sponsored message goes live on this creator's SocialBid profile immediately
-              after payment.
+              Your sponsored message goes live on this creator's SocialBid profile immediately after
+              payment.
             </p>
           </div>
 
