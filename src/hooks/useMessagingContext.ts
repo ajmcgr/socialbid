@@ -1,7 +1,7 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "@/integrations/supabase/browser";
-import { getMessagingContext, type MessagingActorKind } from "@/lib/inbox.functions";
+import { getMessagingContext } from "@/lib/inbox.functions";
 
 type MessagingContext = Awaited<ReturnType<typeof getMessagingContext>>;
 
@@ -9,16 +9,15 @@ export function useMessagingContext() {
   const loadContext = useServerFn(getMessagingContext);
   const [context, setContext] = useState<MessagingContext | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [selectedKind, setSelectedKind] = useState<MessagingActorKind | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(
-    async (nextKind?: MessagingActorKind | null, nextToken?: string | null) => {
+    async (nextToken?: string | null) => {
       try {
         const result = await loadContext({
           data: {
             token: nextToken === undefined ? token : nextToken,
-            actorKind: nextKind ?? selectedKind,
+            actorKind: null,
           },
         });
         setContext(result);
@@ -27,7 +26,7 @@ export function useMessagingContext() {
         setError("This page couldn't load. Please try again.");
       }
     },
-    [loadContext, selectedKind, token],
+    [loadContext, token],
   );
 
   useEffect(() => {
@@ -50,17 +49,10 @@ export function useMessagingContext() {
     };
   }, [loadContext]);
 
-  const setActorKind = async (kind: MessagingActorKind) => {
-    setSelectedKind(kind);
-    await refresh(kind);
-  };
-
   return {
     context,
     token,
-    actorKind: context?.actor?.kind ?? selectedKind,
     error,
     refresh,
-    setActorKind,
   };
 }

@@ -1,9 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-  type MessagingActorKind,
-  type InboxConversation,
-  type InboxNotification,
-} from "@/lib/inbox.functions";
+import { type InboxConversation, type InboxNotification } from "@/lib/inbox.functions";
 
 export function MessagingSignIn() {
   return (
@@ -24,32 +20,6 @@ export function MessagingSignIn() {
           Sponsor sign in
         </Link>
       </div>
-    </div>
-  );
-}
-
-export function RoleSwitcher({
-  kinds,
-  active,
-  onChange,
-}: {
-  kinds: MessagingActorKind[];
-  active: MessagingActorKind;
-  onChange: (kind: MessagingActorKind) => void;
-}) {
-  if (kinds.length < 2) return null;
-  return (
-    <div className="mt-4 flex gap-2" aria-label="Inbox identity">
-      {kinds.map((kind) => (
-        <button
-          key={kind}
-          type="button"
-          onClick={() => onChange(kind)}
-          className={kind === active ? "btn-ink" : "btn-outline-ink"}
-        >
-          {kind === "creator" ? "Creator inbox" : "Sponsor inbox"}
-        </button>
-      ))}
     </div>
   );
 }
@@ -89,7 +59,7 @@ export function ConversationSummary({ conversation }: { conversation: InboxConve
         {conversation.lastMessage ?? "Messaging unlocked — start the conversation."}
       </p>
       <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
-        <span>{conversation.isCurrentSponsor ? "Current sponsor" : "Previous sponsor"}</span>
+        <span>{conversation.relationshipLabel}</span>
         {conversation.lastMessageAt ? (
           <time dateTime={conversation.lastMessageAt}>
             {new Date(conversation.lastMessageAt).toLocaleDateString()}

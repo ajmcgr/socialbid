@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { markNotificationsRead } from "@/lib/inbox.functions";
-import { MessagingSignIn, NotificationItem, RoleSwitcher } from "@/components/MessagingShell";
+import { MessagingSignIn, NotificationItem } from "@/components/MessagingShell";
 import { useMessagingContext } from "@/hooks/useMessagingContext";
 
 export const Route = createFileRoute("/notifications")({
@@ -17,17 +17,15 @@ export const Route = createFileRoute("/notifications")({
 });
 
 function NotificationsPage() {
-  const { context, token, actorKind, error, refresh, setActorKind } = useMessagingContext();
+  const { context, token, error, refresh } = useMessagingContext();
   const markRead = useServerFn(markNotificationsRead);
 
   async function markAllRead() {
-    if (!actorKind) return;
-    await markRead({ data: { token, actorKind } });
+    await markRead({ data: { token, actorKind: null } });
     await refresh();
   }
 
-  async function markOneRead(notificationId: string) {
-    if (!actorKind) return;
+  async function markOneRead(notificationId: string, actorKind: "creator" | "sponsor") {
     await markRead({ data: { token, actorKind, notificationId } });
   }
 
@@ -47,11 +45,6 @@ function NotificationsPage() {
       {context && !context.actor ? <MessagingSignIn /> : null}
       {context?.actor ? (
         <>
-          <RoleSwitcher
-            kinds={context.availableKinds}
-            active={context.actor.kind}
-            onChange={(kind) => void setActorKind(kind)}
-          />
           <div className="mt-6 flex justify-end">
             {context.unreadNotifications ? (
               <button
@@ -73,7 +66,11 @@ function NotificationsPage() {
               <div key={notification.id} className="px-5 py-4">
                 <NotificationItem
                   notification={notification}
-                  onRead={notification.readAt ? undefined : () => void markOneRead(notification.id)}
+                  onRead={
+                    notification.readAt
+                      ? undefined
+                      : () => void markOneRead(notification.id, notification.actorKind)
+                  }
                 />
               </div>
             ))}
