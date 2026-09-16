@@ -40,7 +40,14 @@ function NotificationsPage() {
           Inbox
         </Link>
       </div>
-      {error ? <p className="mt-6 text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-destructive">
+          <p>{error}</p>
+          <button type="button" className="underline" onClick={() => void refresh()}>
+            Try again
+          </button>
+        </div>
+      ) : null}
       {loading && !context ? (
         <p className="mt-8 text-muted-foreground">Loading notifications…</p>
       ) : null}

@@ -47,6 +47,8 @@ test("messaging error and initial loading states are mutually exclusive", () => 
   assert.match(messagingHook, /finally \{[\s\S]*setLoading\(false\)/);
   assert.match(inboxRoute, /loading && !context/);
   assert.match(notificationsRoute, /loading && !context/);
+  assert.match(inboxRoute, /Try again/);
+  assert.match(notificationsRoute, /Try again/);
 });
 
 test("authenticated checkout derives buyer ownership and payment principal server-side", () => {
