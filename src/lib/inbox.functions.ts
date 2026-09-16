@@ -311,7 +311,7 @@ async function loadConversationForActor(
       .select("display_name, username, x_profile_image_url")
       .eq("id", creatorId)
       .maybeSingle(),
-    db.from("buyers").select("company_name").eq("id", buyerId).maybeSingle(),
+    db.from("buyers").select("company_name, user_id").eq("id", buyerId).maybeSingle(),
     db
       .from("payments")
       .select("company_name, logo_url")
@@ -336,6 +336,16 @@ async function loadConversationForActor(
           : conversation["sponsor_last_read_at"]) ?? "1970-01-01T00:00:00.000Z",
       ),
   ]);
+  const { data: buyerXIdentity } =
+    actor.kind === "creator" && buyerRow?.user_id
+      ? await db
+          .from("creators")
+          .select("x_profile_image_url")
+          .eq("user_id", buyerRow.user_id)
+          .not("x_profile_image_url", "is", null)
+          .limit(1)
+          .maybeSingle()
+      : { data: null };
   const { data: creatorListing } = await db
     .from("listings")
     .select("id")
@@ -373,7 +383,9 @@ async function loadConversationForActor(
     counterpartAvatarUrl:
       actor.kind === "sponsor"
         ? ((creatorRow?.x_profile_image_url as string | null) ?? null)
-        : ((sponsorPayment?.logo_url as string | null) ?? null),
+        : ((buyerXIdentity?.x_profile_image_url as string | null) ??
+          (sponsorPayment?.logo_url as string | null) ??
+          null),
     lastMessage:
       (latest?.body as string | null) || (latest?.has_attachments ? "Sent an attachment." : null),
     lastMessageAt: (latest?.created_at as string | null) ?? null,

@@ -13,6 +13,10 @@ export const requestBuyerRecovery = createServerFn({ method: "POST" })
       message:
         "If eligible sponsorships are associated with that email, we've sent verification instructions.",
     } as const;
+    const deliveryFailure = {
+      ok: false,
+      message: "We couldn't send verification right now. Please try again.",
+    } as const;
     try {
       const { admin, baseUrl } = await import("./db.server");
       const { resolveCanonicalAccount } = await import("./account.server");
@@ -52,24 +56,49 @@ export const requestBuyerRecovery = createServerFn({ method: "POST" })
           .gt("created_at", new Date(Date.now() - 10 * 60 * 1000).toISOString());
         if (recent) continue;
         const rawToken = generateClaimToken();
-        const { error } = await db.from("social_bid_buyer_recovery_requests").insert({
-          user_id: account.userId,
-          buyer_id: buyer.id,
-          token_hash: await hashClaimToken(rawToken),
-          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-        });
-        if (error) continue;
-        await sendBuyerRecoveryEmail({
-          to: String(buyer.email),
-          company: String(buyer.company_name || "your sponsor identity"),
-          actionLink: `${baseUrl()}/api/public/buyer-recovery?token=${encodeURIComponent(rawToken)}`,
-          idempotencyKey: `buyer-recovery:${account.userId}:${buyer.id}:${await hashClaimToken(rawToken)}`,
-        });
+        const tokenHash = await hashClaimToken(rawToken);
+        const { data: recoveryRequest, error } = await db
+          .from("social_bid_buyer_recovery_requests")
+          .insert({
+            user_id: account.userId,
+            buyer_id: buyer.id,
+            token_hash: tokenHash,
+            expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+          })
+          .select("id")
+          .single();
+        if (error || !recoveryRequest) continue;
+        try {
+          const delivery = await sendBuyerRecoveryEmail({
+            to: String(buyer.email),
+            company: String(buyer.company_name || "your sponsor identity"),
+            actionLink: `${baseUrl()}/api/public/buyer-recovery?token=${encodeURIComponent(rawToken)}`,
+            idempotencyKey: `buyer-recovery:${account.userId}:${buyer.id}:${tokenHash}`,
+          });
+          if (!delivery.sent) throw new Error("recovery email was not accepted");
+          console.info("buyer recovery email accepted", {
+            requestId: recoveryRequest.id,
+            providerId: delivery.providerId,
+          });
+        } catch (error) {
+          const { error: cleanupError } = await db
+            .from("social_bid_buyer_recovery_requests")
+            .delete()
+            .eq("id", recoveryRequest.id)
+            .is("consumed_at", null);
+          console.error("buyer recovery email failed", {
+            requestId: recoveryRequest.id,
+            reason: error instanceof Error ? error.message : "unknown",
+            cleanupFailed: Boolean(cleanupError),
+          });
+          return deliveryFailure;
+        }
       }
     } catch (error) {
       console.error("buyer recovery request failed", {
         reason: error instanceof Error ? error.message : "unknown",
       });
+      return deliveryFailure;
     }
     return generic;
   });

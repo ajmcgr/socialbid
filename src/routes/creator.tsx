@@ -261,7 +261,7 @@ function CreatorPage() {
                   You're ready to enter the market.
                 </h2>
                 <p className="mt-3 text-sm text-muted-foreground">
-                  Publish your profile and brands can start bidding to sponsor you.
+                  Get sponsored and build direct connections with the people and brands backing you.
                 </p>
 
                 <div className="mt-6 flex items-baseline gap-3 border-2 border-border px-4 py-3">

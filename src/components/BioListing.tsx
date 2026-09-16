@@ -88,7 +88,7 @@ export function BioListing({ view, heading }: { view: ListingView; heading: bool
 
       <p className="mt-5 text-2xl font-bold sm:text-3xl">Sponsor this creator on SocialBid.</p>
       <p className="mt-1 text-base text-muted-foreground sm:text-lg">
-        Your message + link stays on this SocialBid page until somebody pays more.
+        Hold the spot until you're outbid and unlock a direct connection.
       </p>
 
       <div className="mt-8 grid border-2 border-border bg-foreground text-background sm:grid-cols-3">
@@ -191,7 +191,8 @@ export function BioListing({ view, heading }: { view: ListingView; heading: bool
             <div className="panel mt-6 px-5 py-5 text-sm">
               <p>
                 <span className="font-bold">What you get:</span> your sponsored message and tracked
-                link in this creator's sponsorship spot on SocialBid until somebody pays more.
+                link in this creator's sponsorship spot on SocialBid, plus a direct Inbox connection
+                that stays open if you're outbid.
               </p>
             </div>
           </>
@@ -236,8 +237,14 @@ export function BioListing({ view, heading }: { view: ListingView; heading: bool
       <section className="mt-20 grid gap-6 sm:grid-cols-3">
         {[
           ["1. Sponsor", "Pay the current price for the creator's sponsor spot."],
-          ["2. Get featured", "Your message + link appears on the creator's SocialBid profile."],
-          ["3. Get outbid", "Someone pays more and their sponsorship replaces yours."],
+          [
+            "2. Get featured",
+            "Your message + link appears on the creator's SocialBid profile, and your direct connection unlocks.",
+          ],
+          [
+            "3. Get outbid",
+            "The new sponsor takes the public spot, but your Inbox connection stays open.",
+          ],
         ].map(([t, d]) => (
           <div key={t} className="panel px-5 py-6">
             <div className="text-lg font-extrabold">{t}</div>

@@ -13,10 +13,10 @@ export const Route = createFileRoute("/success")({
   },
   head: () => ({
     meta: [
-      { title: "Purchase successful — SocialBid" },
+      { title: "Sponsorship live — SocialBid" },
       {
         name: "description",
-        content: "Your purchase is confirmed and your sponsored placement is live on SocialBid.",
+        content: "Your sponsorship is live and your direct creator connection is unlocked.",
       },
       { property: "og:title", content: "I just sponsored a creator on SocialBid" },
       {
@@ -76,10 +76,10 @@ function Success() {
     <div className="mx-auto max-w-2xl px-5 py-16">
       <p className="label-xs">Confirmed</p>
       <h1 className="mt-2 text-[clamp(2.5rem,10vw,4.5rem)] leading-[0.88] font-semibold tracking-[-0.05em]">
-        Purchase successful
+        Sponsorship live
       </h1>
       <div className="panel mt-6 px-5 py-4">
-        <p className="font-semibold">You're the current sponsor.</p>
+        <p className="font-semibold">You're now sponsoring @{result.creatorHandle}.</p>
         <p className="mt-1 text-sm text-muted-foreground">
           You now hold the sponsorship spot for @{result.creatorHandle}. It's showing on this
           creator's SocialBid profile right now, and stays there until somebody pays more.
@@ -89,8 +89,8 @@ function Success() {
           disclosed.
         </p>
         <p className="mt-2 text-sm font-semibold">
-          Messaging with this creator is now unlocked permanently—even if another sponsor takes the
-          public spot.
+          You've also unlocked a direct Inbox connection. It stays open even if another sponsor
+          takes the public spot.
         </p>
       </div>
       {result.globalRank === 1 ? (
@@ -138,7 +138,7 @@ function Success() {
           View the profile
         </Link>
         <Link to="/inbox" className="btn-outline-ink">
-          Message the creator
+          Message @{result.creatorHandle}
         </Link>
       </div>
 

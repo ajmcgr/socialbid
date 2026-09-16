@@ -499,7 +499,7 @@ export function MarketplaceLeaderboard({
         <div className="border-2 border-border bg-accent p-5 text-accent-foreground">
           <div className="label-xs !text-accent-foreground/60">The status loop</div>
           <p className="mt-3 text-xl leading-tight font-extrabold">
-            Sponsor a profile. Its value rises. Its rank rises. Everyone sees it.
+            Sponsor a creator. Hold the spot until you're outbid. Unlock a direct connection.
           </p>
           <Link
             to="/creator"

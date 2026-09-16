@@ -15,6 +15,7 @@ import {
   type InboxMessage,
 } from "@/lib/inbox.functions";
 import { ConversationSummary, MessagingSignIn } from "@/components/MessagingShell";
+import { CreatorAvatar } from "@/components/CreatorAvatar";
 import { useMessagingContext } from "@/hooks/useMessagingContext";
 import { getSupabase } from "@/integrations/supabase/browser";
 import { completeBuyerRecovery, requestBuyerRecovery } from "@/lib/buyer-recovery.functions";
@@ -62,6 +63,7 @@ function InboxPage() {
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [draftNonce, setDraftNonce] = useState(() => crypto.randomUUID());
   const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
+  const [recoveryFailed, setRecoveryFailed] = useState(false);
 
   const selectedId = useMemo(() => {
     if (
@@ -128,6 +130,7 @@ function InboxPage() {
     const email = String(new FormData(form).get("recovery-email") ?? "");
     const result = await requestRecovery({ data: { token, email } });
     setRecoveryMessage(result.message);
+    setRecoveryFailed(!result.ok);
     form.reset();
   }
 
@@ -360,7 +363,11 @@ function InboxPage() {
             </button>
           </form>
           {recoveryMessage ? (
-            <p className="mt-3 text-sm text-muted-foreground">{recoveryMessage}</p>
+            <p
+              className={`mt-3 text-sm ${recoveryFailed ? "text-destructive" : "text-muted-foreground"}`}
+            >
+              {recoveryMessage}
+            </p>
           ) : null}
         </details>
       ) : null}
@@ -447,70 +454,92 @@ function InboxPage() {
                         Your connection is open. Either of you can send the first message.
                       </p>
                     ) : null}
-                    {messages.map((message) => {
+                    {messages.map((message, index) => {
                       const mine = message.senderKind === selected.actorKind;
+                      const showCounterpartAvatar =
+                        !mine && messages[index + 1]?.senderKind !== message.senderKind;
                       return (
                         <div
                           key={message.id}
-                          className={mine ? "ml-auto max-w-[85%]" : "max-w-[85%]"}
+                          className={
+                            mine
+                              ? "flex justify-end"
+                              : "flex max-w-[90%] items-end gap-2 sm:max-w-[85%]"
+                          }
                         >
-                          <div
-                            className={
-                              mine ? "bg-primary p-3 text-primary-foreground" : "bg-secondary p-3"
-                            }
-                          >
-                            {message.body ? (
-                              <p className="whitespace-pre-wrap text-sm">{message.body}</p>
-                            ) : null}
-                            {message.attachments.length ? (
-                              <div className={`${message.body ? "mt-3" : ""} grid gap-2`}>
-                                {message.attachments.map((attachment) =>
-                                  attachment.mimeType.startsWith("image/") &&
-                                  attachment.previewUrl ? (
-                                    <button
-                                      key={attachment.id}
-                                      type="button"
-                                      onClick={() => void openAttachment(attachment.id)}
-                                      className="overflow-hidden border border-current/20 text-left"
-                                      title={`Open ${attachment.filename}`}
-                                    >
-                                      <img
-                                        src={attachment.previewUrl}
-                                        alt={attachment.filename}
-                                        className="max-h-64 w-full object-contain"
-                                      />
-                                      <span className="block truncate px-2 py-1 font-mono text-[10px]">
-                                        {attachment.filename}
-                                      </span>
-                                    </button>
-                                  ) : (
-                                    <button
-                                      key={attachment.id}
-                                      type="button"
-                                      onClick={() => void openAttachment(attachment.id)}
-                                      className="flex min-w-0 items-center gap-2 border border-current/20 p-2 text-left"
-                                    >
-                                      <FileText className="size-5 shrink-0" aria-hidden="true" />
-                                      <span className="min-w-0">
-                                        <span className="block truncate text-xs font-bold">
+                          {!mine ? (
+                            showCounterpartAvatar ? (
+                              <CreatorAvatar
+                                creator={{
+                                  display_name: selected.counterpartName,
+                                  profile_image_url: selected.counterpartAvatarUrl,
+                                }}
+                                sizeClass="size-7 rounded-full"
+                                fallbackTextClass="text-[10px]"
+                              />
+                            ) : (
+                              <span className="size-7 shrink-0" aria-hidden="true" />
+                            )
+                          ) : null}
+                          <div className={mine ? "max-w-[85%]" : "min-w-0"}>
+                            <div
+                              className={
+                                mine ? "bg-primary p-3 text-primary-foreground" : "bg-secondary p-3"
+                              }
+                            >
+                              {message.body ? (
+                                <p className="whitespace-pre-wrap text-sm">{message.body}</p>
+                              ) : null}
+                              {message.attachments.length ? (
+                                <div className={`${message.body ? "mt-3" : ""} grid gap-2`}>
+                                  {message.attachments.map((attachment) =>
+                                    attachment.mimeType.startsWith("image/") &&
+                                    attachment.previewUrl ? (
+                                      <button
+                                        key={attachment.id}
+                                        type="button"
+                                        onClick={() => void openAttachment(attachment.id)}
+                                        className="overflow-hidden border border-current/20 text-left"
+                                        title={`Open ${attachment.filename}`}
+                                      >
+                                        <img
+                                          src={attachment.previewUrl}
+                                          alt={attachment.filename}
+                                          className="max-h-64 w-full object-contain"
+                                        />
+                                        <span className="block truncate px-2 py-1 font-mono text-[10px]">
                                           {attachment.filename}
                                         </span>
-                                        <span className="block font-mono text-[9px] opacity-70">
-                                          {attachment.mimeType === "application/pdf"
-                                            ? "PDF"
-                                            : "Image"}{" "}
-                                          · {(attachment.sizeBytes / 1024 / 1024).toFixed(1)} MB
+                                      </button>
+                                    ) : (
+                                      <button
+                                        key={attachment.id}
+                                        type="button"
+                                        onClick={() => void openAttachment(attachment.id)}
+                                        className="flex min-w-0 items-center gap-2 border border-current/20 p-2 text-left"
+                                      >
+                                        <FileText className="size-5 shrink-0" aria-hidden="true" />
+                                        <span className="min-w-0">
+                                          <span className="block truncate text-xs font-bold">
+                                            {attachment.filename}
+                                          </span>
+                                          <span className="block font-mono text-[9px] opacity-70">
+                                            {attachment.mimeType === "application/pdf"
+                                              ? "PDF"
+                                              : "Image"}{" "}
+                                            · {(attachment.sizeBytes / 1024 / 1024).toFixed(1)} MB
+                                          </span>
                                         </span>
-                                      </span>
-                                    </button>
-                                  ),
-                                )}
-                              </div>
-                            ) : null}
+                                      </button>
+                                    ),
+                                  )}
+                                </div>
+                              ) : null}
+                            </div>
+                            <time className="mt-1 block font-mono text-[9px] text-muted-foreground">
+                              {new Date(message.createdAt).toLocaleString()}
+                            </time>
                           </div>
-                          <time className="mt-1 block font-mono text-[9px] text-muted-foreground">
-                            {new Date(message.createdAt).toLocaleString()}
-                          </time>
                         </div>
                       );
                     })}

@@ -313,6 +313,9 @@ export function BuyDialog({
               Your sponsored message goes live on this creator's SocialBid profile immediately after
               payment.
             </p>
+            <p className="mt-1 text-muted-foreground">
+              Successful sponsorships unlock direct messaging with the creator.
+            </p>
           </div>
 
           <label className="flex items-start gap-3 text-sm text-foreground">

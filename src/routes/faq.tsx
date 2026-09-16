@@ -25,7 +25,11 @@ const faqs: [string, string][] = [
   ["What is SocialBid?", "SocialBid lets people sponsor creator profiles on SocialBid."],
   [
     "How does sponsorship work?",
-    "Pay the current price to take the sponsor spot. Your message and link go live immediately and stay until somebody pays more.",
+    "Pay the current price to take the sponsor spot. Your message and link go live immediately, and you unlock a direct connection with the creator in your Inbox.",
+  ],
+  [
+    "What happens when I sponsor someone?",
+    "Your sponsorship appears on their SocialBid profile and you unlock a direct connection with them in your Inbox. You keep the sponsorship spot until someone outbids you.",
   ],
   ["Where does my sponsor appear?", "On the creator's profile on SocialBid."],
   [
@@ -33,8 +37,12 @@ const faqs: [string, string][] = [
     "Until somebody pays more. There is no fixed sponsorship period and no deadline.",
   ],
   [
-    "What happens when somebody pays more?",
-    "The new sponsor takes the spot. You get an email with the new price so you can take it back.",
+    "What happens if I'm outbid?",
+    "Your sponsorship spot passes to the new highest bidder, but your Inbox connection stays open. You can continue messaging the creator.",
+  ],
+  [
+    "Does sponsoring someone guarantee a response or collaboration?",
+    "No. Sponsorship unlocks a direct connection, but creators aren't required to reply, post, endorse, follow or provide content. Any collaboration you arrange afterwards is separate from the SocialBid sponsorship.",
   ],
   [
     "When do creators get paid?",
@@ -83,11 +91,11 @@ function FAQPage() {
           ],
           [
             "2. Get featured",
-            "Your \u201CSponsored:\u201D message + tracked link goes live instantly on the creator's SocialBid profile and stays until someone pays more.",
+            "Your \u201CSponsored:\u201D message + tracked link goes live instantly, and a direct Inbox connection unlocks.",
           ],
           [
             "3. Get outbid",
-            "Someone places a higher bid, and you get an email with the new price.",
+            "Someone takes the sponsor spot, but your Inbox connection with the creator stays open.",
           ],
         ].map(([t, d]) => (
           <div key={t} className="panel px-5 py-6">
