@@ -240,13 +240,15 @@ function HamburgerMenu({
               Inbox{messaging?.inbox ? ` (${messaging.inbox})` : ""}
             </Link>
           ) : null}
-          <Link
-            to="/notifications"
-            onClick={() => setOpen(false)}
-            className="block px-5 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:hidden"
-          >
-            Notifications{messaging?.notifications ? ` (${messaging.notifications})` : ""}
-          </Link>
+          {inboxAvailable ? (
+            <Link
+              to="/notifications"
+              onClick={() => setOpen(false)}
+              className="block px-5 py-3 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:hidden"
+            >
+              Notifications{messaging?.notifications ? ` (${messaging.notifications})` : ""}
+            </Link>
+          ) : null}
           <Link
             to="/owners"
             onClick={() => setOpen(false)}
@@ -317,7 +319,6 @@ function SiteHeader({
           if (active)
             setCreatorAuthenticated((current) => (current === undefined ? false : current));
         });
-    refreshCreatorSession();
     window.addEventListener("creator-session-changed", refreshCreatorSession);
     window.addEventListener("social-bid-recover", refreshCreatorSession);
     return () => {
@@ -325,9 +326,13 @@ function SiteHeader({
       window.removeEventListener("creator-session-changed", refreshCreatorSession);
       window.removeEventListener("social-bid-recover", refreshCreatorSession);
     };
-  }, [locationHref]);
+  }, []);
 
   useEffect(() => {
+    if (creatorAuthenticated !== true) {
+      setMessaging(undefined);
+      return;
+    }
     let active = true;
     const refreshMessaging = () =>
       void (async () => {
@@ -358,11 +363,10 @@ function SiteHeader({
       window.removeEventListener("social-bid-recover", refreshMessaging);
       window.removeEventListener("social-bid-messaging-changed", refreshMessaging);
     };
-  }, [locationHref]);
+  }, [creatorAuthenticated, locationHref]);
 
   const creatorCta = creatorAuthenticated ? "My Profile" : "Add your profile";
-  const inboxAvailable = creatorAuthenticated === true || messaging?.available === true;
-  const inboxResolving = creatorAuthenticated === undefined || messaging === undefined;
+  const inboxAvailable = creatorAuthenticated === true;
 
   return (
     <header>
@@ -381,13 +385,11 @@ function SiteHeader({
           <Link to="/faq" className="hover:underline">
             FAQ
           </Link>
-          {creatorAuthenticated === undefined ? (
-            <span aria-hidden="true" className="inline-block h-5 w-[6.5rem]" />
-          ) : (
+          {creatorAuthenticated !== undefined ? (
             <Link to="/creator" className="hover:underline">
               {creatorCta}
             </Link>
-          )}
+          ) : null}
           {inboxAvailable ? (
             <>
               <Link
@@ -419,11 +421,6 @@ function SiteHeader({
                 ) : null}
               </Link>
             </>
-          ) : inboxResolving ? (
-            <span
-              aria-hidden="true"
-              className="hidden h-[27px] w-[78px] shrink-0 sm:inline-block"
-            />
           ) : null}
           <ThemeToggle />
           <HamburgerMenu messaging={messaging} inboxAvailable={inboxAvailable} />

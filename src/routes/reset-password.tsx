@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { getSupabase } from "@/integrations/supabase/browser";
 
@@ -17,7 +17,6 @@ export const Route = createFileRoute("/reset-password")({
 });
 
 function ResetPassword() {
-  const navigate = useNavigate();
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -70,9 +69,31 @@ function ResetPassword() {
     const password = String(new FormData(e.currentTarget).get("password"));
     // Recovery session — do NOT send current_password here.
     const { error } = await sb.auth.updateUser({ password });
+    if (error) {
+      setBusy(false);
+      setMsg(error.message);
+      return;
+    }
+    const {
+      data: { session },
+    } = await sb.auth.getSession();
+    if (!session) {
+      setBusy(false);
+      setMsg("Your password was updated. Please sign in again.");
+      return;
+    }
+    const { establishCanonicalSession } = await import("@/lib/session-bootstrap.functions");
+    const established = await establishCanonicalSession({
+      data: { accessToken: session.access_token },
+    }).catch(() => ({ ok: false as const }));
     setBusy(false);
-    if (error) setMsg(error.message);
-    else navigate({ to: "/admin", replace: true });
+    if (!established.ok) {
+      setMsg(
+        "Your password was updated, but we couldn't finish signing you in. Please sign in again.",
+      );
+      return;
+    }
+    window.location.assign("/admin");
   }
 
   return (

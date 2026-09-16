@@ -58,11 +58,28 @@ function Auth() {
             password,
             options: { emailRedirectTo: window.location.origin + next },
           });
-    setBusy(false);
-    if (error) setMsg(error.message);
-    else if (mode === "up") setMsg("Check your email to confirm your account.");
-    else if (!data.session) setMsg("Please confirm your email, then sign in again.");
-    else window.location.assign(next);
+    if (error) {
+      setBusy(false);
+      setMsg(error.message);
+    } else if (!data.session) {
+      setBusy(false);
+      setMsg(
+        mode === "up"
+          ? "Check your email to confirm your account."
+          : "Please confirm your email, then sign in again.",
+      );
+    } else {
+      const { establishCanonicalSession } = await import("@/lib/session-bootstrap.functions");
+      const established = await establishCanonicalSession({
+        data: { accessToken: data.session.access_token },
+      }).catch(() => ({ ok: false as const }));
+      setBusy(false);
+      if (!established.ok) {
+        setMsg("We couldn't finish signing you in. Please try again.");
+        return;
+      }
+      window.location.assign(next);
+    }
   }
 
   return (

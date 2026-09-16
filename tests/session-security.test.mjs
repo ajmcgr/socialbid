@@ -16,6 +16,12 @@ const callback = readFileSync(
 );
 const checkout = readFileSync(new URL("../src/lib/checkout.functions.ts", import.meta.url), "utf8");
 const account = readFileSync(new URL("../src/lib/account.server.ts", import.meta.url), "utf8");
+const rootRoute = readFileSync(new URL("../src/routes/__root.tsx", import.meta.url), "utf8");
+const authRoute = readFileSync(new URL("../src/routes/auth.tsx", import.meta.url), "utf8");
+const sessionBootstrap = readFileSync(
+  new URL("../src/lib/session-bootstrap.functions.ts", import.meta.url),
+  "utf8",
+);
 
 const sourceFiles = [
   "creator.functions.ts",
@@ -95,4 +101,22 @@ test("disconnect revokes server sessions and clears the browser credential", () 
   assert.match(creatorFunctions, /revokeCreatorSessions\(db, session\.userId\)/);
   assert.match(creatorFunctions, /clearCreatorSessionCookie\(\)/);
   assert.match(sessionServer, /Max-Age=0/);
+});
+
+test("authenticated header controls require the secure creator session", () => {
+  assert.match(rootRoute, /const inboxAvailable = creatorAuthenticated === true/);
+  assert.doesNotMatch(rootRoute, /inboxAvailable =[^;]*messaging\?\.available/);
+  assert.match(rootRoute, /getCreatorAuthState\(\{ data: \{\} \}\)/);
+  assert.doesNotMatch(rootRoute, /\n    refreshCreatorSession\(\);/);
+});
+
+test("email auth establishes the existing server-readable Social Bid session before redirect", () => {
+  assert.match(authRoute, /establishCanonicalSession/);
+  assert.match(authRoute, /accessToken: data\.session\.access_token/);
+  assert.match(authRoute, /await establishCanonicalSession/);
+  assert.match(authRoute, /window\.location\.assign\(next\)/);
+  assert.match(sessionBootstrap, /db\.auth\.getUser\(data\.accessToken\)/);
+  assert.match(sessionBootstrap, /issueCreatorSession\(db, user\.id\)/);
+  assert.match(sessionBootstrap, /setResponseHeader\("Set-Cookie", cookie\)/);
+  assert.doesNotMatch(sessionBootstrap, /localStorage/);
 });
