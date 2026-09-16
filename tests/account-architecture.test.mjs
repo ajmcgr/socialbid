@@ -70,7 +70,8 @@ test("authenticated checkout derives buyer ownership and payment principal serve
 });
 
 test("verified historical recovery can repair only legacy principal-free ownership", () => {
-  assert.match(recovery, /\.ilike\("email", email\)/);
+  assert.match(recovery, /\.eq\("email", email\)/);
+  assert.doesNotMatch(recovery, /\.ilike\("email", email\)/);
   assert.match(recovery, /hasConflictingPrincipal/);
   assert.match(recoveryMigration, /v_owner is distinct from p_user_id/);
   assert.match(recoveryMigration, /initiated_by_user_id is not null/);

@@ -26,7 +26,7 @@ export const requestBuyerRecovery = createServerFn({ method: "POST" })
       const { data: buyers } = await db
         .from("buyers")
         .select("id, email, user_id, company_name")
-        .ilike("email", email);
+        .eq("email", email);
       for (const buyer of buyers ?? []) {
         if (buyer.user_id === account.userId) continue;
         const { data: payments, error: paymentLookupError } = await db
