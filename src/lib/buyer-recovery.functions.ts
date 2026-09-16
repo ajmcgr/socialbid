@@ -26,15 +26,24 @@ export const requestBuyerRecovery = createServerFn({ method: "POST" })
       const { data: buyers } = await db
         .from("buyers")
         .select("id, email, user_id, company_name")
-        .ilike("email", email)
-        .is("user_id", null);
+        .ilike("email", email);
       for (const buyer of buyers ?? []) {
-        const { count } = await db
+        if (buyer.user_id === account.userId) continue;
+        const { data: payments, error: paymentLookupError } = await db
           .from("payments")
-          .select("id", { count: "exact", head: true })
+          .select("status, initiated_by_user_id")
           .eq("buyer_id", buyer.id)
           .eq("status", "applied");
-        if (!count) continue;
+        if (paymentLookupError || !payments?.length) continue;
+        // A differently owned buyer can only be recovered when every applied
+        // sponsorship predates canonical payment principals. The verified
+        // checkout email is then the one-time ownership proof. Any modern
+        // principal belonging to another account makes transfer ineligible.
+        const hasConflictingPrincipal = payments.some(
+          (payment) =>
+            payment.initiated_by_user_id && payment.initiated_by_user_id !== account.userId,
+        );
+        if (hasConflictingPrincipal) continue;
         const { count: recent } = await db
           .from("social_bid_buyer_recovery_requests")
           .select("id", { count: "exact", head: true })

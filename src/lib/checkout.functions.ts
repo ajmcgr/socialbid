@@ -16,7 +16,6 @@ const schema = z.object({
     .positive()
     .refine((value) => value % 100 === 0, "Bid must be a whole-dollar amount."),
   agreed: z.boolean(),
-  authToken: z.string().max(5000).optional().nullable(),
 });
 
 export const startCheckout = createServerFn({ method: "POST" })
@@ -29,7 +28,9 @@ export const startCheckout = createServerFn({ method: "POST" })
     const db = admin();
 
     const { resolveCanonicalAccount } = await import("./account.server");
-    const account = await resolveCanonicalAccount(db, data.authToken);
+    // The secure first-party SocialBid session is authoritative regardless of
+    // whether it was established through X or email authentication.
+    const account = await resolveCanonicalAccount(db);
 
     if (!data.agreed) return { error: "You must accept the terms." };
 

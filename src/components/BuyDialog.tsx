@@ -110,9 +110,6 @@ export function BuyDialog({
     }
     try {
       const logoUrl = await uploadSelectedImage();
-      const { getSupabase } = await import("@/integrations/supabase/browser");
-      const authToken =
-        (await getSupabase()?.auth.getSession())?.data.session?.access_token ?? null;
       const res = await checkout({
         data: {
           username: view.creator.username,
@@ -124,7 +121,6 @@ export function BuyDialog({
           logoUrl,
           bidCents,
           agreed,
-          authToken,
         },
       });
       if ("url" in res && res.url) {

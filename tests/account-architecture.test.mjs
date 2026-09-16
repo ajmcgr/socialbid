@@ -6,8 +6,16 @@ const migration = readFileSync(
   new URL("../db/0028_social_bid_account_architecture.sql", import.meta.url),
   "utf8",
 );
+const recoveryMigration = readFileSync(
+  new URL("../db/0029_social_bid_legacy_buyer_recovery.sql", import.meta.url),
+  "utf8",
+);
 const account = readFileSync(new URL("../src/lib/account.server.ts", import.meta.url), "utf8");
 const checkout = readFileSync(new URL("../src/lib/checkout.functions.ts", import.meta.url), "utf8");
+const checkoutDialog = readFileSync(
+  new URL("../src/components/BuyDialog.tsx", import.meta.url),
+  "utf8",
+);
 const inbox = readFileSync(new URL("../src/lib/inbox.functions.ts", import.meta.url), "utf8");
 const recovery = readFileSync(
   new URL("../src/lib/buyer-recovery.functions.ts", import.meta.url),
@@ -52,11 +60,26 @@ test("messaging error and initial loading states are mutually exclusive", () => 
 });
 
 test("authenticated checkout derives buyer ownership and payment principal server-side", () => {
-  assert.match(checkout, /resolveCanonicalAccount\(db, data\.authToken\)/);
+  assert.match(checkout, /resolveCanonicalAccount\(db\)/);
+  assert.doesNotMatch(checkout, /authToken/);
+  assert.doesNotMatch(checkoutDialog, /auth\.getSession|authToken/);
   assert.match(checkout, /user_id: account\?\.userId \?\? null/);
   assert.match(checkout, /initiated_by_user_id: account\?\.userId \?\? null/);
   assert.match(migration, /social_bid_payment_principal_immutable/);
   assert.doesNotMatch(checkout, /userId: data\./);
+});
+
+test("verified historical recovery can repair only legacy principal-free ownership", () => {
+  assert.match(recovery, /\.ilike\("email", email\)/);
+  assert.match(recovery, /hasConflictingPrincipal/);
+  assert.match(recoveryMigration, /v_owner is distinct from p_user_id/);
+  assert.match(recoveryMigration, /initiated_by_user_id is not null/);
+  assert.match(recoveryMigration, /initiated_by_user_id <> p_user_id/);
+  assert.match(recoveryMigration, /previous_user_id = v_owner/);
+  assert.match(
+    recoveryMigration,
+    /revoke execute on function public\.claim_social_bid_historical_buyer\(text, uuid\)/,
+  );
 });
 
 test("guest and historical claims are hashed, exact, expiring and service-only", () => {
