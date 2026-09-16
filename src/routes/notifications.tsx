@@ -17,7 +17,7 @@ export const Route = createFileRoute("/notifications")({
 });
 
 function NotificationsPage() {
-  const { context, token, error, refresh } = useMessagingContext();
+  const { context, token, error, loading, refresh } = useMessagingContext();
   const markRead = useServerFn(markNotificationsRead);
 
   async function markAllRead() {
@@ -41,7 +41,9 @@ function NotificationsPage() {
         </Link>
       </div>
       {error ? <p className="mt-6 text-sm text-destructive">{error}</p> : null}
-      {!context ? <p className="mt-8 text-muted-foreground">Loading notifications…</p> : null}
+      {loading && !context ? (
+        <p className="mt-8 text-muted-foreground">Loading notifications…</p>
+      ) : null}
       {context && !context.actor ? <MessagingSignIn /> : null}
       {context?.actor ? (
         <>

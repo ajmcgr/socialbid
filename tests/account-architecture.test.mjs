@@ -13,6 +13,16 @@ const recovery = readFileSync(
   new URL("../src/lib/buyer-recovery.functions.ts", import.meta.url),
   "utf8",
 );
+const messagingHook = readFileSync(
+  new URL("../src/hooks/useMessagingContext.ts", import.meta.url),
+  "utf8",
+);
+const rootRoute = readFileSync(new URL("../src/routes/__root.tsx", import.meta.url), "utf8");
+const inboxRoute = readFileSync(new URL("../src/routes/inbox.tsx", import.meta.url), "utf8");
+const notificationsRoute = readFileSync(
+  new URL("../src/routes/notifications.tsx", import.meta.url),
+  "utf8",
+);
 
 test("one canonical account can own multiple buyer identities", () => {
   assert.match(migration, /drop index if exists public\.social_bid_buyers_user_id_unique/);
@@ -25,6 +35,18 @@ test("one canonical account can own multiple buyer identities", () => {
 test("canonical credentials must resolve to the same auth user", () => {
   assert.match(account, /creatorSession\.userId !== authUser\.id/);
   assert.match(account, /Conflicting SocialBid account credentials/);
+});
+
+test("messaging uses the canonical server session without mixing browser credentials", () => {
+  assert.doesNotMatch(messagingHook, /getSupabase|auth\.getSession/);
+  assert.match(messagingHook, /const token = null/);
+  assert.match(rootRoute, /getMessagingContext\(\{ data: \{ token: null \} \}\)/);
+});
+
+test("messaging error and initial loading states are mutually exclusive", () => {
+  assert.match(messagingHook, /finally \{[\s\S]*setLoading\(false\)/);
+  assert.match(inboxRoute, /loading && !context/);
+  assert.match(notificationsRoute, /loading && !context/);
 });
 
 test("authenticated checkout derives buyer ownership and payment principal server-side", () => {

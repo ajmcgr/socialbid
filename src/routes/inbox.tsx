@@ -42,7 +42,7 @@ export const Route = createFileRoute("/inbox")({
 function InboxPage() {
   const { conversation: searchedConversation } = Route.useSearch();
   const navigate = useNavigate();
-  const { context, token, error, refresh } = useMessagingContext();
+  const { context, token, error, loading, refresh } = useMessagingContext();
   const getMessages = useServerFn(getConversationMessages);
   const send = useServerFn(sendInboxMessage);
   const prepareAttachment = useServerFn(createAttachmentUpload);
@@ -331,7 +331,7 @@ function InboxPage() {
         </a>
       </div>
       {error ? <p className="mt-6 text-sm text-destructive">{error}</p> : null}
-      {!context ? <p className="mt-8 text-muted-foreground">Loading inbox…</p> : null}
+      {loading && !context ? <p className="mt-8 text-muted-foreground">Loading inbox…</p> : null}
       {context && !context.actor ? <MessagingSignIn /> : null}
       {context?.accountAuthenticated ? (
         <details className="panel mt-6 px-5 py-4">

@@ -336,9 +336,7 @@ function SiteHeader({
     let active = true;
     const refreshMessaging = () =>
       void (async () => {
-        const sb = getSupabase();
-        const token = sb ? (await sb.auth.getSession()).data.session?.access_token : null;
-        const result = await getMessagingContext({ data: { token: token ?? null } });
+        const result = await getMessagingContext({ data: { token: null } });
         if (!active) return;
         setMessaging({
           available: Boolean(result.actor),
