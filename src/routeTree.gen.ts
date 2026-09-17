@@ -25,6 +25,7 @@ import { Route as SuccessRouteImport } from './routes/success'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as ApiPublicBuyerRecoveryRouteImport } from './routes/api/public/buyer-recovery'
+import { Route as ApiPublicLinkEmailRouteImport } from './routes/api/public/link-email'
 import { Route as ApiPublicOutboundRouteImport } from './routes/api/public/outbound'
 import { Route as ApiPublicReleasePayoutsRouteImport } from './routes/api/public/release-payouts'
 import { Route as ApiPublicShareAvatarRouteImport } from './routes/api/public/share-avatar'
@@ -113,6 +114,11 @@ const ApiPublicBuyerRecoveryRoute = ApiPublicBuyerRecoveryRouteImport.update({
   path: '/api/public/buyer-recovery',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicLinkEmailRoute = ApiPublicLinkEmailRouteImport.update({
+  id: '/api/public/link-email',
+  path: '/api/public/link-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicOutboundRoute = ApiPublicOutboundRouteImport.update({
   id: '/api/public/outbound',
   path: '/api/public/outbound',
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/u/$username': typeof UUsernameRoute
   '/api/public/buyer-recovery': typeof ApiPublicBuyerRecoveryRoute
+  '/api/public/link-email': typeof ApiPublicLinkEmailRoute
   '/api/public/outbound': typeof ApiPublicOutboundRoute
   '/api/public/release-payouts': typeof ApiPublicReleasePayoutsRoute
   '/api/public/share-avatar': typeof ApiPublicShareAvatarRoute
@@ -191,6 +198,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/u/$username': typeof UUsernameRoute
   '/api/public/buyer-recovery': typeof ApiPublicBuyerRecoveryRoute
+  '/api/public/link-email': typeof ApiPublicLinkEmailRoute
   '/api/public/outbound': typeof ApiPublicOutboundRoute
   '/api/public/release-payouts': typeof ApiPublicReleasePayoutsRoute
   '/api/public/share-avatar': typeof ApiPublicShareAvatarRoute
@@ -217,6 +225,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/u/$username': typeof UUsernameRoute
   '/api/public/buyer-recovery': typeof ApiPublicBuyerRecoveryRoute
+  '/api/public/link-email': typeof ApiPublicLinkEmailRoute
   '/api/public/outbound': typeof ApiPublicOutboundRoute
   '/api/public/release-payouts': typeof ApiPublicReleasePayoutsRoute
   '/api/public/share-avatar': typeof ApiPublicShareAvatarRoute
@@ -244,6 +253,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/u/$username'
     | '/api/public/buyer-recovery'
+    | '/api/public/link-email'
     | '/api/public/outbound'
     | '/api/public/release-payouts'
     | '/api/public/share-avatar'
@@ -269,6 +279,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/u/$username'
     | '/api/public/buyer-recovery'
+    | '/api/public/link-email'
     | '/api/public/outbound'
     | '/api/public/release-payouts'
     | '/api/public/share-avatar'
@@ -294,6 +305,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/u/$username'
     | '/api/public/buyer-recovery'
+    | '/api/public/link-email'
     | '/api/public/outbound'
     | '/api/public/release-payouts'
     | '/api/public/share-avatar'
@@ -320,6 +332,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   UUsernameRoute: typeof UUsernameRoute
   ApiPublicBuyerRecoveryRoute: typeof ApiPublicBuyerRecoveryRoute
+  ApiPublicLinkEmailRoute: typeof ApiPublicLinkEmailRoute
   ApiPublicOutboundRoute: typeof ApiPublicOutboundRoute
   ApiPublicReleasePayoutsRoute: typeof ApiPublicReleasePayoutsRoute
   ApiPublicShareAvatarRoute: typeof ApiPublicShareAvatarRoute
@@ -443,6 +456,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicBuyerRecoveryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/link-email': {
+      id: '/api/public/link-email'
+      path: '/api/public/link-email'
+      fullPath: '/api/public/link-email'
+      preLoaderRoute: typeof ApiPublicLinkEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/outbound': {
       id: '/api/public/outbound'
       path: '/api/public/outbound'
@@ -512,6 +532,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   UUsernameRoute: UUsernameRoute,
   ApiPublicBuyerRecoveryRoute: ApiPublicBuyerRecoveryRoute,
+  ApiPublicLinkEmailRoute: ApiPublicLinkEmailRoute,
   ApiPublicOutboundRoute: ApiPublicOutboundRoute,
   ApiPublicReleasePayoutsRoute: ApiPublicReleasePayoutsRoute,
   ApiPublicShareAvatarRoute: ApiPublicShareAvatarRoute,

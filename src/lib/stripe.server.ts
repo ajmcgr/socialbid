@@ -155,8 +155,7 @@ export async function createConnectAccount(opts: { email?: string | null; userna
       type: "express",
       "capabilities[transfers][requested]": "true",
       "business_profile[name]": `SocialBid — ${opts.username}`,
-      "business_profile[product_description]":
-        "Sponsored placement on a SocialBid creator profile",
+      "business_profile[product_description]": "Sponsored placement on a SocialBid creator profile",
       "metadata[buymybio_username]": opts.username,
       ...(opts.email ? { email: opts.email } : {}),
     }),

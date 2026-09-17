@@ -411,7 +411,7 @@ export function MarketplaceLeaderboard({
               Rankings
             </h2>
             <p className="text-xs text-muted-foreground">
-              Ranked by successful sponsorship payments. No weighting. No boosting.
+              Sponsorship values come from successful payments. Choose a view to sort the market.
             </p>
           </div>
           <div className="flex max-w-full gap-1 overflow-x-auto" aria-label="Leaderboard sorting">

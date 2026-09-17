@@ -10,6 +10,9 @@ const xCallback = read("src/routes/api/public/x-callback.ts");
 const home = read("src/components/MarketplaceLeaderboard.tsx");
 const migration = read("db/0030_social_bid_passwordless_auth.sql");
 const inboxShell = read("src/components/MessagingShell.tsx");
+const accountLinking = read("src/lib/account-linking.functions.ts");
+const emailLinkCallback = read("src/routes/api/public/link-email.ts");
+const identityLinkMigration = read("db/0031_social_bid_identity_linking.sql");
 
 test("generic sign-in offers only X, Google and passwordless email", () => {
   assert.match(auth, /Continue with X/);
@@ -58,4 +61,25 @@ test("passwordless request throttling is SocialBid-only and service-role-only", 
   assert.match(migration, /revoke all privileges[\s\S]*from public, anon, authenticated/);
   assert.match(migration, /revoke all on function[\s\S]*from public, anon, authenticated/);
   assert.match(migration, /grant execute[\s\S]*to service_role/);
+});
+
+test("explicit Google linking bootstraps the exact existing canonical user", () => {
+  assert.match(accountLinking, /resolveCreatorSession/);
+  assert.match(accountLinking, /auth\.admin\.getUserById\(session\.userId\)/);
+  assert.match(accountLinking, /type: "magiclink"/);
+  assert.match(auth, /signInWithOAuth/);
+  assert.match(read("src/routes/creator.tsx"), /auth\.linkIdentity\(\{/);
+  assert.doesNotMatch(accountLinking, /display_name|company_name|social_handle/);
+});
+
+test("email sign-in linking requires mailbox proof bound to the current session", () => {
+  assert.match(accountLinking, /reserve_social_bid_email_identity_link/);
+  assert.match(accountLinking, /sendSignInMethodLinkEmail/);
+  assert.match(emailLinkCallback, /resolveCreatorSession/);
+  assert.match(emailLinkCallback, /\.eq\("user_id", session\.userId\)/);
+  assert.match(emailLinkCallback, /auth\.admin\.updateUserById\(session\.userId/);
+  assert.match(identityLinkMigration, /id <> p_user_id/);
+  assert.match(identityLinkMigration, /return 'conflict'/);
+  assert.match(identityLinkMigration, /revoke all privileges[\s\S]*public, anon, authenticated/);
+  assert.match(identityLinkMigration, /grant execute[\s\S]*service_role/);
 });

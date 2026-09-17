@@ -37,8 +37,8 @@ function About() {
           <p>Hello there!</p>
 
           <p>
-            Creators spend years building an audience. SocialBid gives each creator a public
-            profile with one clearly disclosed sponsor spot that anyone can compete for.
+            Creators spend years building an audience. SocialBid gives each creator a public profile
+            with one clearly disclosed sponsor spot that anyone can compete for.
           </p>
 
           <p>

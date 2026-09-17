@@ -132,7 +132,7 @@ function Auth() {
     <div className="mx-auto max-w-md px-5 py-20">
       <h1 className="text-3xl font-extrabold">Sign in to SocialBid</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Use X, Google, or a secure email link. They all open the same SocialBid account.
+        Use X, Google, or a secure email link. Add extra sign-in methods later from My Profile.
       </p>
       <div className="panel mt-6 space-y-3 px-5 py-6">
         <a href={xHref} className="btn-ink btn-ink-hover flex w-full justify-center">

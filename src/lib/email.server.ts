@@ -472,6 +472,27 @@ export async function sendMagicLinkEmail(o: {
   );
 }
 
+export async function sendSignInMethodLinkEmail(o: {
+  to: string;
+  actionLink: string;
+  idempotencyKey: string;
+}) {
+  return send(
+    o.to,
+    "Confirm your SocialBid sign-in email",
+    shell(
+      `
+      ${h1("Confirm your sign-in email")}
+      ${p("Use this secure one-time link to add this email as a sign-in method for your existing SocialBid account.")}
+      ${button(o.actionLink, "Confirm email \u2192")}
+      ${p("This link expires in 30 minutes. If you didn't request it, you can ignore this email.")}
+    `,
+      "You received this because an email sign-in method was requested for SocialBid.",
+    ),
+    { idempotencyKey: o.idempotencyKey, throwOnFailure: true },
+  );
+}
+
 export async function sendBuyerRecoveryEmail(o: {
   to: string;
   company: string;

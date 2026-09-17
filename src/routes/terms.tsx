@@ -35,8 +35,8 @@ export const Route = createFileRoute("/terms")({
         Bid or any other person or brand, or misrepresent the placement as a personal endorsement.
       </p>
       <p>
-        Placements must comply with applicable advertising rules. SocialBid may suspend a profile
-        or cancel a placement that breaches those rules.
+        Placements must comply with applicable advertising rules. SocialBid may suspend a profile or
+        cancel a placement that breaches those rules.
       </p>
       <p>SocialBid is not affiliated with or endorsed by X.</p>
       <p>

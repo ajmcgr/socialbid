@@ -28,6 +28,13 @@ import {
 } from "@/lib/payouts.functions";
 import { trackEvent } from "@/lib/listing.functions";
 import { money } from "@/lib/format";
+import {
+  getSignInMethods,
+  prepareGoogleIdentityLink,
+  requestSignInEmailLink,
+} from "@/lib/account-linking.functions";
+
+type SignInMethods = Awaited<ReturnType<typeof getSignInMethods>>;
 
 export const Route = createFileRoute("/creator")({
   head: () => ({
@@ -44,6 +51,7 @@ export const Route = createFileRoute("/creator")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "robots", content: "noindex" },
     ],
   }),
   component: CreatorPage,
@@ -71,6 +79,11 @@ function CreatorPage() {
   const [notificationEmail, setNotificationEmail] = useState("");
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [signInMethods, setSignInMethods] = useState<SignInMethods>(null);
+  const [signInEmail, setSignInEmail] = useState("");
+  const [linkingGoogle, setLinkingGoogle] = useState(false);
+  const [linkingEmail, setLinkingEmail] = useState(false);
+  const [linkMessage, setLinkMessage] = useState<string | null>(null);
   const enterMarketSeen = useRef(false);
 
   const loadPayouts = useCallback(() => {
@@ -82,11 +95,17 @@ function CreatorPage() {
   }, []);
 
   const loadCreatorSession = useCallback(() => {
-    void Promise.all([getCreatorSession({ data: {} }), getCreatorAuthState({ data: {} })])
-      .then(([s, auth]) => {
+    void Promise.all([
+      getCreatorSession({ data: {} }),
+      getCreatorAuthState({ data: {} }),
+      getSignInMethods({ data: {} }),
+    ])
+      .then(([s, auth, methods]) => {
         setSession(s);
         setAuthenticated(auth);
+        setSignInMethods(methods);
         setNotificationEmail(s?.notificationEmail ?? "");
+        setSignInEmail(methods?.email ?? "");
       })
       .catch(() => undefined)
       .finally(() => setLoading(false));
@@ -102,7 +121,15 @@ function CreatorPage() {
       void trackEvent({ data: { name: "x_auth_completed" } }).catch(() => undefined);
     }
     const stripeReturn = params.get("stripe");
-    if (connected || stripeReturn) {
+    const emailLink = params.get("email_link");
+    if (emailLink === "success") setLinkMessage("Email sign-in is now connected.");
+    if (emailLink === "conflict")
+      setLinkMessage("That email is already linked to another account.");
+    if (emailLink === "session_required")
+      setLinkMessage("Sign in again before confirming a new sign-in email.");
+    if (emailLink === "invalid" || emailLink === "failed")
+      setLinkMessage("That email-linking request is invalid or has expired.");
+    if (connected || stripeReturn || emailLink) {
       window.history.replaceState({}, "", "/creator");
     }
     loadCreatorSession();
@@ -203,6 +230,71 @@ function CreatorPage() {
     setAuthenticated(false);
     setBusy(false);
     window.dispatchEvent(new Event("creator-session-changed"));
+  }
+
+  async function onLinkGoogle() {
+    const supabase = getSupabase();
+    if (!supabase) {
+      setLinkMessage("Google linking is temporarily unavailable.");
+      return;
+    }
+    setLinkingGoogle(true);
+    setLinkMessage(null);
+    const prepared = await prepareGoogleIdentityLink({ data: {} }).catch(() => ({
+      error: "We couldn't start Google linking. Please try again.",
+    }));
+    if ("error" in prepared) {
+      setLinkingGoogle(false);
+      setLinkMessage(prepared.error);
+      return;
+    }
+    if ("alreadyLinked" in prepared) {
+      setSignInMethods((current) => (current ? { ...current, google: true } : current));
+      setLinkingGoogle(false);
+      return;
+    }
+    const verified = await supabase.auth.verifyOtp({
+      token_hash: prepared.tokenHash,
+      type: "magiclink",
+    });
+    if (verified.error || !verified.data.session) {
+      setLinkingGoogle(false);
+      setLinkMessage("We couldn't verify your current SocialBid session. Please try again.");
+      return;
+    }
+    const redirect = new URL("/auth", window.location.origin);
+    redirect.searchParams.set("next", "/creator");
+    const linked = await supabase.auth.linkIdentity({
+      provider: "google",
+      options: { redirectTo: redirect.toString() },
+    });
+    if (linked.error) {
+      setLinkingGoogle(false);
+      setLinkMessage(
+        /already|exists|linked/i.test(linked.error.message)
+          ? "That Google account is already linked to another account."
+          : "We couldn't connect Google. Please try again.",
+      );
+    }
+  }
+
+  async function onLinkEmail(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLinkingEmail(true);
+    setLinkMessage(null);
+    const result = await requestSignInEmailLink({ data: { email: signInEmail } }).catch(() => ({
+      error: "We couldn't send the verification email.",
+    }));
+    setLinkingEmail(false);
+    if ("error" in result) {
+      setLinkMessage(result.error);
+      return;
+    }
+    if ("alreadyLinked" in result) {
+      setLinkMessage("That email is already connected for sign-in.");
+      return;
+    }
+    setLinkMessage("Check your email to confirm this sign-in method.");
   }
 
   return (
@@ -382,6 +474,80 @@ function CreatorPage() {
                 {busy ? "Saving…" : session.notificationEmail ? "Save email" : "Add email"}
               </button>
             </div>
+          </div>
+
+          <div className="panel mt-6 p-6">
+            <div className="label-xs">Sign-in methods</div>
+            <h2 className="mt-1 text-xl font-semibold">Access your SocialBid account</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Add another verified sign-in method to this same account. Your profile, sponsorships
+              and Inbox stay unchanged.
+            </p>
+            <div className="mt-5 space-y-4">
+              <div className="flex items-center justify-between gap-4 border-2 border-border px-4 py-3">
+                <div>
+                  <div className="font-semibold">X</div>
+                  <div className="text-xs text-muted-foreground">
+                    {signInMethods?.x ? "Connected" : "Not connected"}
+                  </div>
+                </div>
+                <span className="font-mono text-xs font-bold">
+                  {signInMethods?.x ? "CONNECTED" : "—"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4 border-2 border-border px-4 py-3">
+                <div>
+                  <div className="font-semibold">Google</div>
+                  <div className="text-xs text-muted-foreground">
+                    {signInMethods?.google ? "Connected" : "Not connected"}
+                  </div>
+                </div>
+                {signInMethods?.google ? (
+                  <span className="font-mono text-xs font-bold">CONNECTED</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onLinkGoogle}
+                    disabled={linkingGoogle}
+                    className="btn-outline-ink disabled:opacity-50"
+                  >
+                    {linkingGoogle ? "Connecting…" : "Connect Google"}
+                  </button>
+                )}
+              </div>
+              <form onSubmit={onLinkEmail} className="border-2 border-border px-4 py-3">
+                <div className="font-semibold">Email</div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {signInMethods?.email
+                    ? `Connected: ${signInMethods.email}`
+                    : "Add a verified passwordless sign-in email."}
+                </div>
+                {!signInMethods?.email ? (
+                  <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                    <input
+                      type="email"
+                      required
+                      value={signInEmail}
+                      onChange={(event) => setSignInEmail(event.target.value)}
+                      placeholder="you@example.com"
+                      aria-label="Email sign-in method"
+                      className="min-w-0 flex-1 border-2 border-border bg-background px-3 py-2.5 text-sm outline-none"
+                    />
+                    <button
+                      disabled={linkingEmail}
+                      className="btn-outline-ink shrink-0 disabled:opacity-50"
+                    >
+                      {linkingEmail ? "Sending…" : "Add email"}
+                    </button>
+                  </div>
+                ) : null}
+              </form>
+            </div>
+            {linkMessage ? (
+              <p role="status" className="mt-4 text-sm font-medium">
+                {linkMessage}
+              </p>
+            ) : null}
           </div>
 
           {session.bioVerified ? (
