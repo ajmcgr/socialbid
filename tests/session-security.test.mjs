@@ -112,7 +112,8 @@ test("authenticated header controls require the secure creator session", () => {
 
 test("email auth establishes the existing server-readable Social Bid session before redirect", () => {
   assert.match(authRoute, /establishCanonicalSession/);
-  assert.match(authRoute, /accessToken: data\.session\.access_token/);
+  assert.match(authRoute, /data: \{ accessToken \}/);
+  assert.match(authRoute, /finish\(data\.session\.access_token\)/);
   assert.match(authRoute, /await establishCanonicalSession/);
   assert.match(authRoute, /window\.location\.assign\(next\)/);
   assert.match(sessionBootstrap, /db\.auth\.getUser\(data\.accessToken\)/);

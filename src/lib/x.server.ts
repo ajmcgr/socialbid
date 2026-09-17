@@ -39,6 +39,41 @@ export function redirectUri(base: string): string {
   return `${base}/api/public/x-callback`;
 }
 
+export const X_OAUTH_NEXT_PATHS = ["/creator", "/inbox", "/notifications", "/admin"] as const;
+export type XOAuthNextPath = (typeof X_OAUTH_NEXT_PATHS)[number];
+
+export function safeXOAuthNext(value: string | null | undefined): XOAuthNextPath {
+  return X_OAUTH_NEXT_PATHS.includes(value as XOAuthNextPath)
+    ? (value as XOAuthNextPath)
+    : "/creator";
+}
+
+type XOAuthStateData = {
+  verifier: string;
+  linkUserId: string | null;
+  next: XOAuthNextPath;
+};
+
+export function encodeXOAuthState(data: XOAuthStateData): string {
+  return JSON.stringify(data);
+}
+
+export function decodeXOAuthState(value: string): XOAuthStateData {
+  try {
+    const parsed = JSON.parse(value) as Partial<XOAuthStateData>;
+    if (typeof parsed.verifier === "string" && parsed.verifier.length >= 20) {
+      return {
+        verifier: parsed.verifier,
+        linkUserId: typeof parsed.linkUserId === "string" ? parsed.linkUserId : null,
+        next: safeXOAuthNext(parsed.next),
+      };
+    }
+  } catch {
+    // States created before account linking stored only the raw verifier.
+  }
+  return { verifier: value, linkUserId: null, next: "/creator" };
+}
+
 export function authorizeUrl(base: string, state: string, challenge: string): string {
   const p = new URLSearchParams({
     response_type: "code",

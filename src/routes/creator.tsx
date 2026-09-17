@@ -12,11 +12,13 @@ import {
 } from "@/components/ui/dialog";
 import {
   getCreatorSession,
+  getCreatorAuthState,
   disconnectXAccount,
   publishListing,
   updateNotificationEmail,
   type CreatorSession,
 } from "@/lib/creator.functions";
+import { getSupabase } from "@/integrations/supabase/browser";
 import {
   getPayoutStatus,
   startPayoutOnboarding,
@@ -61,6 +63,7 @@ function Badge({ on, label }: { on: boolean; label: string }) {
 
 function CreatorPage() {
   const [session, setSession] = useState<CreatorSession | null>(null);
+  const [authenticated, setAuthenticated] = useState<boolean | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -79,9 +82,10 @@ function CreatorPage() {
   }, []);
 
   const loadCreatorSession = useCallback(() => {
-    void getCreatorSession({ data: {} })
-      .then((s) => {
+    void Promise.all([getCreatorSession({ data: {} }), getCreatorAuthState({ data: {} })])
+      .then(([s, auth]) => {
         setSession(s);
+        setAuthenticated(auth);
         setNotificationEmail(s?.notificationEmail ?? "");
       })
       .catch(() => undefined)
@@ -190,10 +194,21 @@ function CreatorPage() {
     setMessage("Notification email saved.");
   }
 
+  async function onAccountSignOut() {
+    setBusy(true);
+    const { signOutCanonicalSession } = await import("@/lib/session-bootstrap.functions");
+    await signOutCanonicalSession({ data: {} });
+    await getSupabase()?.auth.signOut({ scope: "local" });
+    setSession(null);
+    setAuthenticated(false);
+    setBusy(false);
+    window.dispatchEvent(new Event("creator-session-changed"));
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-5 py-14">
       <h1 className="text-[clamp(2rem,7vw,3.25rem)] leading-[0.9] font-semibold tracking-[-0.05em]">
-        {session ? "Profile" : "Add your profile"}
+        {authenticated ? "Profile" : "Add your profile"}
       </h1>
       <p className="mt-4 text-muted-foreground">
         Connect X to confirm your identity, then add your profile to SocialBid.
@@ -213,6 +228,27 @@ function CreatorPage() {
 
       {loading ? (
         <p className="mt-10 text-sm text-muted-foreground">Loading…</p>
+      ) : authenticated && !session ? (
+        <div className="panel mt-8 p-6">
+          <div className="label-xs">Your SocialBid account</div>
+          <h2 className="mt-1 text-xl font-semibold">Want to get sponsored?</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Add your X profile to enter the creator marketplace. This does not post to X or give
+            sponsors access to your X account.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a href="/api/public/x-start?next=%2Fcreator" className="btn-ink btn-ink-hover">
+              Add your X profile
+            </a>
+            <button
+              onClick={onAccountSignOut}
+              disabled={busy}
+              className="btn-outline-ink disabled:opacity-50"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
       ) : !session ? (
         <div className="panel mt-8 p-6">
           <div className="label-xs">Add your profile</div>
@@ -528,6 +564,8 @@ function errorCopy(code: string): string {
       return "X returned an error during sign-in. Please try again.";
     case "x_already_connected":
       return "That X profile is already connected to another SocialBid creator.";
+    case "x_account_conflict":
+      return "This SocialBid account already has a different X profile connected.";
     case "missing_code":
       return "That sign-in didn't complete. Please connect again.";
     case "creator_create_failed":

@@ -451,22 +451,22 @@ export async function sendPayoutSetupReminderEmail(o: {
   );
 }
 
-export async function sendPasswordResetEmail(o: {
+export async function sendMagicLinkEmail(o: {
   to: string;
   actionLink: string;
   idempotencyKey: string;
 }) {
   return send(
     o.to,
-    "Set your SocialBid password",
+    "Sign in to SocialBid",
     shell(
       `
-      ${h1("Set your password")}
-      ${p("Use the button below to choose a password for your SocialBid account. The link expires soon — if it stops working, request a fresh one from the sign-in page.")}
-      ${button(o.actionLink, "Set password \u2192")}
-      ${p("If you didn't ask for this, you can ignore this email.")}
+      ${h1("Sign in to SocialBid")}
+      ${p("Use this secure one-time link to sign in. It expires soon and can only be used once.")}
+      ${button(o.actionLink, "Sign in to SocialBid \u2192")}
+      ${p("If you didn't request this link, you can ignore this email.")}
     `,
-      "You received this because a password reset was requested for your SocialBid account.",
+      "You received this because a passwordless sign-in was requested for SocialBid.",
     ),
     { idempotencyKey: o.idempotencyKey, throwOnFailure: true },
   );

@@ -1,18 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { getSupabase } from "@/integrations/supabase/browser";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
+import { getSupabase } from "@/integrations/supabase/browser";
+import { requestMagicLink } from "@/lib/magic-link.functions";
+
+const safeNext = z.enum(["/admin", "/creator", "/inbox", "/notifications"]);
 
 export const Route = createFileRoute("/auth")({
   validateSearch: z.object({
-    next: z.enum(["/admin", "/inbox", "/notifications"]).optional().catch(undefined),
+    next: safeNext.optional().catch(undefined),
+    token_hash: z.string().min(20).max(4096).optional().catch(undefined),
+    type: z.literal("magiclink").optional().catch(undefined),
   }),
   head: () => ({
     meta: [
       { title: "Sign In — SocialBid" },
-      { name: "description", content: "Sign in to manage your SocialBid profile." },
+      { name: "description", content: "Sign in to your SocialBid account." },
       { property: "og:title", content: "Sign In — SocialBid" },
-      { property: "og:description", content: "Sign in to manage your profile." },
+      { property: "og:description", content: "Sign in to your SocialBid account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -22,119 +27,180 @@ export const Route = createFileRoute("/auth")({
 });
 
 function Auth() {
-  const { next = "/admin" } = Route.useSearch();
-  const [mode, setMode] = useState<"in" | "up" | "reset">("in");
+  const { next = "/admin", token_hash: tokenHash, type } = Route.useSearch();
+  const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const finishing = useRef(false);
 
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const sb = getSupabase();
-    if (!sb) {
-      setMsg("Auth is not configured yet.");
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) {
+      setMessage("Sign in is temporarily unavailable. Please try again.");
       return;
     }
-    setBusy(true);
-    setMsg(null);
-    const f = new FormData(e.currentTarget);
-    const email = String(f.get("email"));
-    const password = String(f.get("password"));
-    if (mode === "reset") {
-      const { requestPasswordReset } = await import("@/lib/auth-emails.functions");
-      const result = await requestPasswordReset({ data: { email } });
-      setBusy(false);
-      setMsg(
-        result.ok
-          ? "A new SocialBid password email is on its way. Use the newest email only."
-          : "We couldn't send the password email. Please try again in a moment.",
-      );
-      return;
-    }
-    const { data, error } =
-      mode === "in"
-        ? await sb.auth.signInWithPassword({ email, password })
-        : await sb.auth.signUp({
-            email,
-            password,
-            options: { emailRedirectTo: window.location.origin + next },
-          });
-    if (error) {
-      setBusy(false);
-      setMsg(error.message);
-    } else if (!data.session) {
-      setBusy(false);
-      setMsg(
-        mode === "up"
-          ? "Check your email to confirm your account."
-          : "Please confirm your email, then sign in again.",
-      );
-    } else {
+    let active = true;
+    async function finish(accessToken: string) {
+      if (!active || finishing.current) return;
+      finishing.current = true;
+      setBusy(true);
       const { establishCanonicalSession } = await import("@/lib/session-bootstrap.functions");
       const established = await establishCanonicalSession({
-        data: { accessToken: data.session.access_token },
+        data: { accessToken },
       }).catch(() => ({ ok: false as const }));
-      setBusy(false);
+      if (!active) return;
       if (!established.ok) {
-        setMsg("We couldn't finish signing you in. Please try again.");
+        finishing.current = false;
+        setBusy(false);
+        setMessage("We couldn't finish signing you in. Please try again.");
         return;
       }
       window.location.assign(next);
     }
+
+    async function resolveAuth() {
+      if (tokenHash && type === "magiclink") {
+        const { data, error } = await supabase!.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "magiclink",
+        });
+        if (!active) return;
+        if (error || !data.session) {
+          setMessage("That sign-in link is invalid or has expired. Request a new one.");
+          return;
+        }
+        await finish(data.session.access_token);
+        return;
+      }
+      const { data } = await supabase!.auth.getSession();
+      if (data.session) await finish(data.session.access_token);
+    }
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) void finish(session.access_token);
+    });
+    void resolveAuth();
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, [next, tokenHash, type]);
+
+  async function continueWithGoogle() {
+    const supabase = getSupabase();
+    if (!supabase) {
+      setMessage("Sign in is temporarily unavailable. Please try again.");
+      return;
+    }
+    setBusy(true);
+    setMessage(null);
+    const redirect = new URL("/auth", window.location.origin);
+    redirect.searchParams.set("next", next);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: redirect.toString() },
+    });
+    if (error) {
+      setBusy(false);
+      setMessage("Google sign-in couldn't start. Please try again.");
+    }
   }
+
+  async function sendEmailLink() {
+    setBusy(true);
+    setMessage(null);
+    const result = await requestMagicLink({ data: { email, next } }).catch(() => ({
+      ok: false as const,
+    }));
+    setBusy(false);
+    if (!result.ok) {
+      setMessage("We couldn't send the sign-in email. Please try again in a moment.");
+      return;
+    }
+    setSent(true);
+  }
+
+  async function continueWithEmail(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await sendEmailLink();
+  }
+
+  const xHref = `/api/public/x-start?${new URLSearchParams({ next }).toString()}`;
 
   return (
     <div className="mx-auto max-w-md px-5 py-20">
-      <h1 className="text-3xl font-extrabold">
-        {mode === "in" ? "Sign in" : mode === "up" ? "Create account" : "Set your password"}
-      </h1>
-      <form onSubmit={submit} className="panel mt-6 space-y-4 px-5 py-6">
-        <div>
-          <label className="label-xs" htmlFor="email">
-            Email
-          </label>
-          <input id="email" name="email" type="email" required className="field mt-1" />
+      <h1 className="text-3xl font-extrabold">Sign in to SocialBid</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Use X, Google, or a secure email link. They all open the same SocialBid account.
+      </p>
+      <div className="panel mt-6 space-y-3 px-5 py-6">
+        <a href={xHref} className="btn-ink btn-ink-hover flex w-full justify-center">
+          Continue with X
+        </a>
+        <button
+          type="button"
+          onClick={continueWithGoogle}
+          disabled={busy}
+          className="btn-outline-ink w-full justify-center disabled:opacity-40"
+        >
+          Continue with Google
+        </button>
+        <div className="flex items-center gap-3 py-2" aria-hidden="true">
+          <span className="h-px flex-1 bg-border" />
+          <span className="font-mono text-xs text-muted-foreground">OR</span>
+          <span className="h-px flex-1 bg-border" />
         </div>
-        {mode !== "reset" && (
-          <div>
-            <label className="label-xs" htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              minLength={8}
-              className="field mt-1"
-            />
+        {sent ? (
+          <div role="status">
+            <h2 className="font-extrabold">Check your email</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              We sent a one-time SocialBid sign-in link to {email}.
+            </p>
+            <div className="mt-4 flex gap-4 text-sm">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={sendEmailLink}
+                className="underline disabled:opacity-40"
+              >
+                {busy ? "Sending…" : "Resend link"}
+              </button>
+              <button type="button" onClick={() => setSent(false)} className="underline">
+                Use another email
+              </button>
+            </div>
           </div>
+        ) : (
+          <form onSubmit={continueWithEmail} className="space-y-3">
+            <div>
+              <label className="label-xs" htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="field mt-1"
+              />
+            </div>
+            <button
+              disabled={busy}
+              className="btn-outline-ink w-full justify-center disabled:opacity-40"
+            >
+              {busy ? "Sending…" : "Email me a sign-in link"}
+            </button>
+          </form>
         )}
-        {msg && (
-          <p
-            className={`text-sm font-medium ${msg.startsWith("Check your email") || msg.startsWith("A new SocialBid") ? "" : "text-destructive"}`}
-          >
-            {msg}
+        {message ? (
+          <p role="alert" className="text-sm font-medium text-destructive">
+            {message}
           </p>
-        )}
-        <button disabled={busy} className="btn-ink btn-ink-hover w-full disabled:opacity-40">
-          {busy
-            ? "…"
-            : mode === "in"
-              ? "Sign in"
-              : mode === "up"
-                ? "Sign up"
-                : "Email me a password link"}
-        </button>
-      </form>
-      <div className="mt-4 flex gap-4 text-sm">
-        <button onClick={() => setMode(mode === "in" ? "up" : "in")} className="underline">
-          {mode === "in" ? "Need an account?" : "Already have an account?"}
-        </button>
-        {mode === "in" && (
-          <button onClick={() => setMode("reset")} className="underline">
-            Never set a password?
-          </button>
-        )}
+        ) : null}
       </div>
     </div>
   );

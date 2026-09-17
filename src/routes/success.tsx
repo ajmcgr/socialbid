@@ -3,6 +3,8 @@ import { settleSession } from "@/lib/checkout.functions";
 import { money } from "@/lib/format";
 import { z } from "zod";
 import { Trophy } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getCreatorAuthState } from "@/lib/creator.functions";
 
 export const Route = createFileRoute("/success")({
   validateSearch: z.object({ session_id: z.string().optional() }),
@@ -40,6 +42,13 @@ export const Route = createFileRoute("/success")({
 
 function Success() {
   const result = Route.useLoaderData();
+  const [authenticated, setAuthenticated] = useState<boolean | undefined>(undefined);
+
+  useEffect(() => {
+    void getCreatorAuthState({ data: {} })
+      .then(setAuthenticated)
+      .catch(() => setAuthenticated(undefined));
+  }, []);
 
   if (result.status !== "owned") {
     const stale = result.status === "stale";
@@ -137,9 +146,15 @@ function Success() {
         <Link to="/u/$username" params={{ username: result.slug }} className="btn-outline-ink">
           View the profile
         </Link>
-        <Link to="/inbox" className="btn-outline-ink">
-          Message @{result.creatorHandle}
-        </Link>
+        {authenticated ? (
+          <Link to="/inbox" className="btn-outline-ink">
+            Message @{result.creatorHandle}
+          </Link>
+        ) : authenticated === false ? (
+          <Link to="/auth" search={{ next: "/inbox" }} className="btn-outline-ink">
+            Sign in to message @{result.creatorHandle}
+          </Link>
+        ) : null}
       </div>
 
       <p className="mt-8 text-sm text-muted-foreground">

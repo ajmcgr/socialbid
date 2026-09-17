@@ -28,3 +28,19 @@ export const establishCanonicalSession = createServerFn({ method: "POST" })
     setResponseHeader("Set-Cookie", cookie);
     return { ok: true as const };
   });
+
+/** Revokes only SocialBid's first-party sessions and clears its HttpOnly cookie. */
+export const signOutCanonicalSession = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({}).parse(input))
+  .handler(async () => {
+    const [{ admin }, sessionModule, { setResponseHeader }] = await Promise.all([
+      import("./db.server"),
+      import("./creator-session.server"),
+      import("@tanstack/react-start/server"),
+    ]);
+    const db = admin();
+    const session = await sessionModule.resolveCreatorSession(db);
+    if (session) await sessionModule.revokeCreatorSessions(db, session.userId);
+    setResponseHeader("Set-Cookie", sessionModule.clearCreatorSessionCookie());
+    return { ok: true as const };
+  });

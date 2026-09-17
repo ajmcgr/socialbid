@@ -3,23 +3,15 @@ import { type InboxConversation, type InboxNotification } from "@/lib/inbox.func
 
 export function MessagingSignIn() {
   return (
-    <div className="panel mt-8 grid gap-5 px-5 py-6 sm:grid-cols-2">
-      <div>
-        <h2 className="text-lg font-extrabold">Creator</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Connect X to open your sponsor Inbox.</p>
-        <Link to="/creator" className="btn-ink btn-ink-hover mt-4">
-          Connect X
-        </Link>
-      </div>
-      <div>
-        <h2 className="text-lg font-extrabold">Sponsor</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Sign in with the email you used when sponsoring.
-        </p>
-        <Link to="/auth" search={{ next: "/inbox" }} className="btn-outline-ink mt-4">
-          Sponsor sign in
-        </Link>
-      </div>
+    <div className="panel mt-8 px-5 py-6">
+      <h2 className="text-lg font-extrabold">Sign in to SocialBid</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Use X, Google, or email to open the same Inbox for creators you sponsor and sponsors who
+        back you.
+      </p>
+      <Link to="/auth" search={{ next: "/inbox" }} className="btn-ink btn-ink-hover mt-4">
+        Sign in
+      </Link>
     </div>
   );
 }
