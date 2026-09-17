@@ -11,6 +11,7 @@ export const Route = createFileRoute("/auth")({
     next: safeNext.optional().catch(undefined),
     token_hash: z.string().min(20).max(4096).optional().catch(undefined),
     type: z.literal("magiclink").optional().catch(undefined),
+    link_token: z.string().min(20).max(200).optional().catch(undefined),
   }),
   head: () => ({
     meta: [
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function Auth() {
-  const { next = "/admin", token_hash: tokenHash, type } = Route.useSearch();
+  const { next = "/admin", token_hash: tokenHash, type, link_token: linkToken } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -45,15 +46,28 @@ function Auth() {
       if (!active || finishing.current) return;
       finishing.current = true;
       setBusy(true);
-      const { establishCanonicalSession } = await import("@/lib/session-bootstrap.functions");
-      const established = await establishCanonicalSession({
-        data: { accessToken },
-      }).catch(() => ({ ok: false as const }));
+      const established = linkToken
+        ? await import("@/lib/account-linking.functions")
+            .then(({ completeCanonicalAccountLink }) =>
+              completeCanonicalAccountLink({ data: { accessToken, linkToken } }),
+            )
+            .catch(() => ({ ok: false as const, error: "failed" as const }))
+        : await import("@/lib/session-bootstrap.functions")
+            .then(({ establishCanonicalSession }) =>
+              establishCanonicalSession({ data: { accessToken } }),
+            )
+            .catch(() => ({ ok: false as const }));
       if (!active) return;
       if (!established.ok) {
         finishing.current = false;
         setBusy(false);
-        setMessage("We couldn't finish signing you in. Please try again.");
+        setMessage(
+          "error" in established && established.error === "conflict"
+            ? "That sign-in method already belongs to another SocialBid account."
+            : linkToken
+              ? "We couldn't finish linking that sign-in method. Please try again."
+              : "We couldn't finish signing you in. Please try again.",
+        );
         return;
       }
       window.location.assign(next);
@@ -85,7 +99,7 @@ function Auth() {
       active = false;
       listener.subscription.unsubscribe();
     };
-  }, [next, tokenHash, type]);
+  }, [linkToken, next, tokenHash, type]);
 
   async function continueWithGoogle() {
     const supabase = getSupabase();

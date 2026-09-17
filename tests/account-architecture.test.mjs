@@ -21,6 +21,10 @@ const recovery = readFileSync(
   new URL("../src/lib/buyer-recovery.functions.ts", import.meta.url),
   "utf8",
 );
+const canonicalMigration = readFileSync(
+  new URL("../db/0033_social_bid_canonical_account_resolution.sql", import.meta.url),
+  "utf8",
+);
 const messagingHook = readFileSync(
   new URL("../src/hooks/useMessagingContext.ts", import.meta.url),
   "utf8",
@@ -40,9 +44,15 @@ test("one canonical account can own multiple buyer identities", () => {
   assert.match(inbox, /\.\.\.access\.sponsors/);
 });
 
-test("canonical credentials must resolve to the same auth user", () => {
-  assert.match(account, /creatorSession\.userId !== authUser\.id/);
+test("canonical credentials resolve through the private SocialBid account map", () => {
+  assert.match(account, /resolveSocialBidAccountId/);
+  assert.match(account, /ensure_social_bid_account/);
+  assert.match(account, /resolve_social_bid_account/);
+  assert.match(account, /creatorSession\.userId !== authAccountId/);
   assert.match(account, /Conflicting SocialBid account credentials/);
+  assert.match(canonicalMigration, /auth_user_id uuid primary key/);
+  assert.match(canonicalMigration, /canonical_user_id uuid not null/);
+  assert.match(canonicalMigration, /revoke all privileges[\s\S]*public, anon, authenticated/);
 });
 
 test("messaging uses the canonical server session without mixing browser credentials", () => {
@@ -64,7 +74,8 @@ test("authenticated checkout derives buyer ownership and payment principal serve
   assert.doesNotMatch(checkout, /authToken/);
   assert.doesNotMatch(checkoutDialog, /auth\.getSession|authToken/);
   assert.match(checkout, /user_id: account\?\.userId \?\? null/);
-  assert.match(checkout, /initiated_by_user_id: account\?\.userId \?\? null/);
+  assert.match(checkout, /initiated_by_user_id: account\?\.authUserId \?\? null/);
+  assert.match(checkout, /user_id: account\?\.userId \?\? null/);
   assert.match(migration, /social_bid_payment_principal_immutable/);
   assert.doesNotMatch(checkout, /userId: data\./);
 });
@@ -73,6 +84,8 @@ test("verified historical recovery can repair only legacy principal-free ownersh
   assert.match(recovery, /\.eq\("email", email\)/);
   assert.doesNotMatch(recovery, /\.ilike\("email", email\)/);
   assert.match(recovery, /hasConflictingPrincipal/);
+  assert.match(recovery, /resolveSocialBidAccountId/);
+  assert.match(canonicalMigration, /mapping\.auth_user_id = p\.initiated_by_user_id/);
   assert.match(recoveryMigration, /v_owner is distinct from p_user_id/);
   assert.match(recoveryMigration, /initiated_by_user_id is not null/);
   assert.match(recoveryMigration, /initiated_by_user_id <> p_user_id/);

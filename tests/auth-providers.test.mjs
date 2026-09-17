@@ -13,6 +13,9 @@ const inboxShell = read("src/components/MessagingShell.tsx");
 const accountLinking = read("src/lib/account-linking.functions.ts");
 const emailLinkCallback = read("src/routes/api/public/link-email.ts");
 const identityLinkMigration = read("db/0031_social_bid_identity_linking.sql");
+const canonicalMigration = read("db/0033_social_bid_canonical_account_resolution.sql");
+const sessionBootstrap = read("src/lib/session-bootstrap.functions.ts");
+const creator = read("src/routes/creator.tsx");
 
 test("generic sign-in offers only X, Google and passwordless email", () => {
   assert.match(auth, /Continue with X/);
@@ -63,23 +66,48 @@ test("passwordless request throttling is SocialBid-only and service-role-only", 
   assert.match(migration, /grant execute[\s\S]*to service_role/);
 });
 
-test("explicit Google linking bootstraps the exact existing canonical user", () => {
+test("explicit Google linking proves both sides without moving an Auth identity", () => {
   assert.match(accountLinking, /resolveCreatorSession/);
-  assert.match(accountLinking, /auth\.admin\.getUserById\(session\.userId\)/);
-  assert.match(accountLinking, /type: "magiclink"/);
-  assert.match(auth, /signInWithOAuth/);
-  assert.match(read("src/routes/creator.tsx"), /auth\.linkIdentity\(\{/);
+  assert.match(accountLinking, /social_bid_account_link_intents/);
+  assert.match(accountLinking, /complete_social_bid_account_link/);
+  assert.match(creator, /link_token/);
+  assert.match(creator, /signInWithOAuth/);
+  assert.doesNotMatch(creator, /auth\.linkIdentity/);
+  assert.match(auth, /completeCanonicalAccountLink/);
   assert.doesNotMatch(accountLinking, /display_name|company_name|social_handle/);
 });
 
 test("email sign-in linking requires mailbox proof bound to the current session", () => {
-  assert.match(accountLinking, /reserve_social_bid_email_identity_link/);
+  assert.match(accountLinking, /createLinkIntent\(current, "email"/);
+  assert.match(accountLinking, /email_confirmed_at/);
+  assert.match(accountLinking, /emailHash !== intent\.email_hash/);
   assert.match(accountLinking, /sendSignInMethodLinkEmail/);
-  assert.match(emailLinkCallback, /resolveCreatorSession/);
-  assert.match(emailLinkCallback, /\.eq\("user_id", session\.userId\)/);
-  assert.match(emailLinkCallback, /auth\.admin\.updateUserById\(session\.userId/);
+  assert.match(auth, /token_hash/);
+  assert.match(auth, /linkToken/);
+  assert.doesNotMatch(emailLinkCallback, /updateUserById|social_bid_email_identity_links/);
   assert.match(identityLinkMigration, /id <> p_user_id/);
-  assert.match(identityLinkMigration, /return 'conflict'/);
   assert.match(identityLinkMigration, /revoke all privileges[\s\S]*public, anon, authenticated/);
-  assert.match(identityLinkMigration, /grant execute[\s\S]*service_role/);
+  assert.match(canonicalMigration, /grant execute[\s\S]*service_role/);
+});
+
+test("normal Google and email login resolve through the canonical mapping", () => {
+  assert.match(sessionBootstrap, /resolveSocialBidAccountId/);
+  assert.match(sessionBootstrap, /createIfMissing: true/);
+  assert.match(canonicalMigration, /on conflict \(auth_user_id\) do nothing/);
+});
+
+test("link intents are provider-bound, session-bound, expiring and single-use", () => {
+  assert.match(canonicalMigration, /provider in \('google', 'email'\)/);
+  assert.match(canonicalMigration, /v_intent\.session_id <> p_session_id/);
+  assert.match(canonicalMigration, /v_intent\.expires_at <= now\(\)/);
+  assert.match(canonicalMigration, /v_intent\.used_at is not null/);
+  assert.match(canonicalMigration, /for update/);
+  assert.match(canonicalMigration, /where id = v_intent\.id and used_at is null/);
+});
+
+test("a provider already mapped to any other SocialBid account is rejected", () => {
+  assert.match(canonicalMigration, /v_existing_canonical <> v_intent\.canonical_user_id/);
+  assert.match(canonicalMigration, /return 'conflict'/);
+  assert.doesNotMatch(canonicalMigration, /set canonical_user_id = v_intent\.canonical_user_id/);
+  assert.match(canonicalMigration, /where user_id = p_authenticated_user_id/);
 });

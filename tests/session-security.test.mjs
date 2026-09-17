@@ -83,8 +83,9 @@ test("expired, revoked, random and legacy tokens fail closed", () => {
   for (const source of sourceFiles) assert.doesNotMatch(source, /\.eq\("session_token"/);
 });
 
-test("X callback issues only the new user-backed session", () => {
-  assert.match(callback, /issueCreatorSession\(db, userId\)/);
+test("X callback issues only the canonical SocialBid session", () => {
+  assert.match(callback, /resolveSocialBidAccountId\(db, userId/);
+  assert.match(callback, /issueCreatorSession\(db, canonicalUserId\)/);
   assert.match(callback, /"Set-Cookie": sessionCookie/);
   assert.doesNotMatch(callback, /session_token/);
 });
@@ -114,10 +115,10 @@ test("email auth establishes the existing server-readable Social Bid session bef
   assert.match(authRoute, /establishCanonicalSession/);
   assert.match(authRoute, /data: \{ accessToken \}/);
   assert.match(authRoute, /finish\(data\.session\.access_token\)/);
-  assert.match(authRoute, /await establishCanonicalSession/);
   assert.match(authRoute, /window\.location\.assign\(next\)/);
   assert.match(sessionBootstrap, /db\.auth\.getUser\(data\.accessToken\)/);
-  assert.match(sessionBootstrap, /issueCreatorSession\(db, user\.id\)/);
+  assert.match(sessionBootstrap, /resolveSocialBidAccountId\(db, user\.id/);
+  assert.match(sessionBootstrap, /issueCreatorSession\(db, canonicalUserId\)/);
   assert.match(sessionBootstrap, /setResponseHeader\("Set-Cookie", cookie\)/);
   assert.doesNotMatch(sessionBootstrap, /localStorage/);
 });

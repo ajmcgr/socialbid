@@ -19,7 +19,8 @@ export const requestBuyerRecovery = createServerFn({ method: "POST" })
     } as const;
     try {
       const { admin, baseUrl } = await import("./db.server");
-      const { resolveCanonicalAccount } = await import("./account.server");
+      const { resolveCanonicalAccount, resolveSocialBidAccountId } =
+        await import("./account.server");
       const { generateClaimToken, hashClaimToken } = await import("./account-claims.server");
       const { sendBuyerRecoveryEmail } = await import("./email.server");
       const db = admin();
@@ -43,9 +44,16 @@ export const requestBuyerRecovery = createServerFn({ method: "POST" })
         // sponsorship predates canonical payment principals. The verified
         // checkout email is then the one-time ownership proof. Any modern
         // principal belonging to another account makes transfer ineligible.
-        const hasConflictingPrincipal = payments.some(
-          (payment) =>
-            payment.initiated_by_user_id && payment.initiated_by_user_id !== account.userId,
+        const principalAccountIds = await Promise.all(
+          payments
+            .map((payment) => payment.initiated_by_user_id)
+            .filter((principal): principal is string => Boolean(principal))
+            .map((principal) =>
+              resolveSocialBidAccountId(db, principal, { createIfMissing: false }),
+            ),
+        );
+        const hasConflictingPrincipal = principalAccountIds.some(
+          (canonicalUserId) => canonicalUserId && canonicalUserId !== account.userId,
         );
         if (hasConflictingPrincipal) continue;
         const { count: recent } = await db

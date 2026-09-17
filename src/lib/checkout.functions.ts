@@ -143,7 +143,10 @@ export const startCheckout = createServerFn({ method: "POST" })
         destination_url: destination,
         logo_url: logo,
         x_handle: data.xHandle ?? null,
-        initiated_by_user_id: account?.userId ?? null,
+        // Preserve the raw authenticated Supabase user as the payment audit
+        // principal. Commercial ownership is canonicalized separately through
+        // buyers.user_id, so linked providers do not change audit semantics.
+        initiated_by_user_id: account?.authUserId ?? null,
         status: "created",
       })
       .select("id")

@@ -45,7 +45,7 @@ function sessionCookie(token: string): string {
 }
 
 /**
- * Issues one first-party SocialBid session for the canonical X-backed auth user.
+ * Issues one first-party SocialBid session for the canonical SocialBid account.
  * The raw credential exists only in memory and the HttpOnly cookie; the database
  * receives only its SHA-256 digest.
  */

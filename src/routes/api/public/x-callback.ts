@@ -237,8 +237,15 @@ export const Route = createFileRoute("/api/public/x-callback")({
 
         let sessionCookie: string;
         try {
-          const { issueCreatorSession } = await import("@/lib/creator-session.server");
-          sessionCookie = await issueCreatorSession(db, userId);
+          const [{ issueCreatorSession }, { resolveSocialBidAccountId }] = await Promise.all([
+            import("@/lib/creator-session.server"),
+            import("@/lib/account.server"),
+          ]);
+          const canonicalUserId = await resolveSocialBidAccountId(db, userId, {
+            createIfMissing: true,
+          });
+          if (!canonicalUserId) throw new Error("Canonical SocialBid account is unavailable.");
+          sessionCookie = await issueCreatorSession(db, canonicalUserId);
         } catch (error) {
           console.error("creator session creation failed", error);
           return fail("creator_identity_failed");

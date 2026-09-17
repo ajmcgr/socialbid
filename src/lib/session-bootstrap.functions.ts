@@ -12,9 +12,15 @@ const establishSessionIn = z.object({
 export const establishCanonicalSession = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => establishSessionIn.parse(input))
   .handler(async ({ data }) => {
-    const [{ admin }, { issueCreatorSession }, { setResponseHeader }] = await Promise.all([
+    const [
+      { admin },
+      { issueCreatorSession },
+      { resolveSocialBidAccountId },
+      { setResponseHeader },
+    ] = await Promise.all([
       import("./db.server"),
       import("./creator-session.server"),
+      import("./account.server"),
       import("@tanstack/react-start/server"),
     ]);
     const db = admin();
@@ -24,7 +30,11 @@ export const establishCanonicalSession = createServerFn({ method: "POST" })
     } = await db.auth.getUser(data.accessToken);
     if (error || !user) return { ok: false as const };
 
-    const cookie = await issueCreatorSession(db, user.id);
+    const canonicalUserId = await resolveSocialBidAccountId(db, user.id, {
+      createIfMissing: true,
+    });
+    if (!canonicalUserId) return { ok: false as const };
+    const cookie = await issueCreatorSession(db, canonicalUserId);
     setResponseHeader("Set-Cookie", cookie);
     return { ok: true as const };
   });

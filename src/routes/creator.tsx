@@ -253,18 +253,10 @@ function CreatorPage() {
       setLinkingGoogle(false);
       return;
     }
-    const verified = await supabase.auth.verifyOtp({
-      token_hash: prepared.tokenHash,
-      type: "magiclink",
-    });
-    if (verified.error || !verified.data.session) {
-      setLinkingGoogle(false);
-      setLinkMessage("We couldn't verify your current SocialBid session. Please try again.");
-      return;
-    }
     const redirect = new URL("/auth", window.location.origin);
     redirect.searchParams.set("next", "/creator");
-    const linked = await supabase.auth.linkIdentity({
+    redirect.searchParams.set("link_token", prepared.linkToken);
+    const linked = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: redirect.toString() },
     });
