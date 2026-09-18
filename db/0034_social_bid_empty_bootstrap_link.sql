@@ -49,9 +49,10 @@ begin
   end if;
 
   -- Explicit links are rare. These short transaction-scoped locks make the
-  -- emptiness proof, mapping change and intent consumption atomic with respect
-  -- to every SocialBid write that can establish ownership for the provider
-  -- principal. Post-owned tables are deliberately not included.
+  -- ownership proof, role canonicalization, mapping change and intent
+  -- consumption atomic with respect to every SocialBid write that can
+  -- establish ownership for the provider principal. Post-owned tables are
+  -- deliberately not included.
   lock table
     public.social_bid_account_auth_users,
     public.user_roles,
@@ -77,10 +78,6 @@ begin
 
     select not (
       exists (
-        select 1 from public.user_roles r
-        where r.user_id = p_authenticated_user_id
-      )
-      or exists (
         select 1 from public.creators c
         where c.user_id = p_authenticated_user_id
       )
@@ -136,15 +133,14 @@ begin
       or exists (
         select 1 from public.social_bid_buyer_recovery_requests r
         where r.user_id = p_authenticated_user_id
-           or r.previous_user_id = p_authenticated_user_id
+          and r.consumed_at is null
+          and r.expires_at > now()
       )
       or exists (
         select 1 from public.social_bid_email_identity_links e
         where e.user_id = p_authenticated_user_id
-      )
-      or exists (
-        select 1 from public.social_bid_guest_buyer_claims g
-        where g.claimed_by_user_id = p_authenticated_user_id
+          and e.used_at is null
+          and e.expires_at > now()
       )
       or exists (
         select 1 from public.social_bid_user_sessions s
@@ -162,6 +158,18 @@ begin
     if not v_empty_bootstrap then
       return 'conflict';
     end if;
+
+    -- Roles are authorization metadata, not independent marketplace
+    -- ownership. Canonicalize them without dropping privileges. Completed
+    -- recovery/claim rows remain untouched as immutable audit history.
+    insert into public.user_roles (user_id, role)
+    select v_intent.canonical_user_id, role
+    from public.user_roles
+    where user_id = p_authenticated_user_id
+    on conflict (user_id, role) do nothing;
+
+    delete from public.user_roles
+    where user_id = p_authenticated_user_id;
 
     update public.social_bid_account_auth_users
     set canonical_user_id = v_intent.canonical_user_id,
