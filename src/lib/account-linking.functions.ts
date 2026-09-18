@@ -8,6 +8,15 @@ const completeInput = z.object({
   accessToken: z.string().min(20).max(4096),
   linkToken: z.string().min(20).max(200),
 });
+const callbackFailureInput = z.object({
+  provider: z.literal("google"),
+  errorCode: z
+    .string()
+    .trim()
+    .min(1)
+    .max(80)
+    .regex(/^[a-zA-Z0-9_-]+$/),
+});
 
 async function sha256(value: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
@@ -114,6 +123,23 @@ export const prepareGoogleIdentityLink = createServerFn({ method: "POST" })
     }
   });
 
+/** Records a provider callback failure without accepting or logging provider error details. */
+export const reportCanonicalLinkCallbackFailure = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => callbackFailureInput.parse(input))
+  .handler(async ({ data }) => {
+    const [{ admin }, { resolveCreatorSession }] = await Promise.all([
+      import("./db.server"),
+      import("./creator-session.server"),
+    ]);
+    if (!(await resolveCreatorSession(admin()))) return { ok: false as const };
+    console.error("SocialBid account-link callback failed", {
+      stage: "provider_callback",
+      provider: data.provider,
+      code: data.errorCode,
+    });
+    return { ok: true as const };
+  });
+
 /**
  * Sends a native Supabase magic-link credential for the requested mailbox,
  * bound to a private SocialBid account-link intent and the current HttpOnly
@@ -183,9 +209,21 @@ export const completeCanonicalAccountLink = createServerFn({ method: "POST" })
       ]);
     const db = admin();
     const session = await sessionModule.resolveCreatorSession(db);
-    if (!session) return { ok: false as const, error: "session_required" as const };
+    if (!session) {
+      console.error("SocialBid account-link completion failed", {
+        stage: "canonical_session",
+        code: "session_required",
+      });
+      return { ok: false as const, error: "session_required" as const };
+    }
     const { data: authData, error: authError } = await db.auth.getUser(data.accessToken);
-    if (authError || !authData.user) return { ok: false as const, error: "invalid" as const };
+    if (authError || !authData.user) {
+      console.error("SocialBid account-link completion failed", {
+        stage: "provider_identity",
+        code: authError?.code ?? "missing_user",
+      });
+      return { ok: false as const, error: "invalid" as const };
+    }
 
     const tokenHash = await sha256(data.linkToken);
     const { data: intent, error: intentError } = await db
@@ -201,6 +239,10 @@ export const completeCanonicalAccountLink = createServerFn({ method: "POST" })
       intent.canonical_user_id !== session.userId ||
       new Date(intent.expires_at).getTime() <= Date.now()
     ) {
+      console.error("SocialBid account-link completion failed", {
+        stage: "link_intent",
+        code: intentError?.code ?? (!intent ? "missing" : "invalid_or_expired"),
+      });
       return { ok: false as const, error: "invalid" as const };
     }
 
@@ -208,15 +250,27 @@ export const completeCanonicalAccountLink = createServerFn({ method: "POST" })
     let emailHash: string | null = null;
     if (provider === "google") {
       if (!hasProvider(authData.user, "google")) {
+        console.error("SocialBid account-link completion failed", {
+          stage: "provider_binding",
+          code: "provider_mismatch",
+        });
         return { ok: false as const, error: "provider_mismatch" as const };
       }
     } else {
       const email = authData.user.email?.trim().toLowerCase() ?? "";
       if (!authData.user.email_confirmed_at || !isDeliverableEmail(email)) {
+        console.error("SocialBid account-link completion failed", {
+          stage: "provider_binding",
+          code: "email_unverified",
+        });
         return { ok: false as const, error: "provider_mismatch" as const };
       }
       emailHash = await sha256(email);
       if (emailHash !== intent.email_hash) {
+        console.error("SocialBid account-link completion failed", {
+          stage: "provider_binding",
+          code: "email_mismatch",
+        });
         return { ok: false as const, error: "provider_mismatch" as const };
       }
     }
@@ -229,11 +283,24 @@ export const completeCanonicalAccountLink = createServerFn({ method: "POST" })
       p_email_hash: emailHash,
     });
     if (error) {
-      console.error("SocialBid account-link completion failed", { code: error.code });
+      console.error("SocialBid account-link completion failed", {
+        stage: "canonical_mapping_rpc",
+        code: error.code,
+      });
       return { ok: false as const, error: "failed" as const };
     }
-    if (result === "conflict") return { ok: false as const, error: "conflict" as const };
+    if (result === "conflict") {
+      console.error("SocialBid account-link completion failed", {
+        stage: "canonical_mapping",
+        code: "conflict",
+      });
+      return { ok: false as const, error: "conflict" as const };
+    }
     if (result !== "linked" && result !== "already_linked") {
+      console.error("SocialBid account-link completion failed", {
+        stage: "canonical_mapping",
+        code: "invalid_result",
+      });
       return { ok: false as const, error: "invalid" as const };
     }
 

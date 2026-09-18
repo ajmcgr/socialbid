@@ -42,6 +42,24 @@ function Auth() {
       return;
     }
     let active = true;
+    function linkFailureDestination(error: string) {
+      const params = new URLSearchParams({
+        google_link: error === "conflict" ? "conflict" : "failed",
+      });
+      return `/creator?${params.toString()}`;
+    }
+
+    async function reportGoogleCallbackFailure(errorCode: string) {
+      const safeCode = /^[a-zA-Z0-9_-]{1,80}$/.test(errorCode) ? errorCode : "oauth_error";
+      await import("@/lib/account-linking.functions")
+        .then(({ reportCanonicalLinkCallbackFailure }) =>
+          reportCanonicalLinkCallbackFailure({
+            data: { provider: "google", errorCode: safeCode },
+          }),
+        )
+        .catch(() => undefined);
+    }
+
     async function finish(accessToken: string) {
       if (!active || finishing.current) return;
       finishing.current = true;
@@ -59,6 +77,14 @@ function Auth() {
             .catch(() => ({ ok: false as const }));
       if (!active) return;
       if (!established.ok) {
+        if (linkToken && type !== "magiclink") {
+          const error =
+            "error" in established && typeof established.error === "string"
+              ? established.error
+              : "failed";
+          window.location.assign(linkFailureDestination(error));
+          return;
+        }
         finishing.current = false;
         setBusy(false);
         setMessage(
@@ -74,6 +100,18 @@ function Auth() {
     }
 
     async function resolveAuth() {
+      if (linkToken && type !== "magiclink") {
+        const callbackParams = new URLSearchParams([
+          ...new URLSearchParams(window.location.search),
+          ...new URLSearchParams(window.location.hash.replace(/^#/, "")),
+        ]);
+        const callbackError = callbackParams.get("error_code") ?? callbackParams.get("error");
+        if (callbackError) {
+          await reportGoogleCallbackFailure(callbackError);
+          if (active) window.location.assign(linkFailureDestination("failed"));
+          return;
+        }
+      }
       if (tokenHash && type === "magiclink") {
         const { data, error } = await supabase!.auth.verifyOtp({
           token_hash: tokenHash,
