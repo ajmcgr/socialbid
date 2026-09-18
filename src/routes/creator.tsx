@@ -123,6 +123,7 @@ function CreatorPage() {
     const stripeReturn = params.get("stripe");
     const emailLink = params.get("email_link");
     const googleLink = params.get("google_link");
+    const linkError = params.get("link_error");
     if (emailLink === "success") setLinkMessage("Email sign-in is now connected.");
     if (emailLink === "conflict")
       setLinkMessage("That email is already linked to another account.");
@@ -130,10 +131,11 @@ function CreatorPage() {
       setLinkMessage("Sign in again before confirming a new sign-in email.");
     if (emailLink === "invalid" || emailLink === "failed")
       setLinkMessage("That email-linking request is invalid or has expired.");
-    if (googleLink === "conflict")
-      setLinkMessage("That Google account already belongs to another SocialBid account.");
-    if (googleLink === "failed")
-      setLinkMessage("We couldn't finish connecting Google. Please try again.");
+    if (googleLink === "success") setMessage("Google — Connected");
+    if (linkError === "google_conflict")
+      setMessage("That Google account belongs to another established SocialBid account.");
+    if (linkError === "google_failed")
+      setMessage("Google couldn't be connected. Please try again.");
     if (connected || stripeReturn || emailLink || googleLink) {
       window.history.replaceState({}, "", "/creator");
     }

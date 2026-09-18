@@ -34,6 +34,7 @@ function Auth() {
   const [sent, setSent] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const finishing = useRef(false);
+  const googleLinkMode = Boolean(linkToken && type !== "magiclink");
 
   useEffect(() => {
     const supabase = getSupabase();
@@ -44,7 +45,7 @@ function Auth() {
     let active = true;
     function linkFailureDestination(error: string) {
       const params = new URLSearchParams({
-        google_link: error === "conflict" ? "conflict" : "failed",
+        link_error: error === "conflict" ? "google_conflict" : "google_failed",
       });
       return `/creator?${params.toString()}`;
     }
@@ -96,7 +97,7 @@ function Auth() {
         );
         return;
       }
-      window.location.assign(next);
+      window.location.assign(googleLinkMode ? "/creator?google_link=success" : next);
     }
 
     async function resolveAuth() {
@@ -137,7 +138,7 @@ function Auth() {
       active = false;
       listener.subscription.unsubscribe();
     };
-  }, [linkToken, next, tokenHash, type]);
+  }, [googleLinkMode, linkToken, next, tokenHash, type]);
 
   async function continueWithGoogle() {
     const supabase = getSupabase();
@@ -179,6 +180,17 @@ function Auth() {
   }
 
   const xHref = `/api/public/x-start?${new URLSearchParams({ next }).toString()}`;
+
+  if (googleLinkMode) {
+    return (
+      <div className="mx-auto max-w-md px-5 py-20" role="status" aria-live="polite">
+        <h1 className="text-3xl font-extrabold">Connecting Google…</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Finishing the connection to your SocialBid account.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-md px-5 py-20">
