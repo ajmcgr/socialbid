@@ -8,6 +8,7 @@ const canonicalMigration = read("db/0033_social_bid_canonical_account_resolution
 const auth = read("src/routes/auth.tsx");
 const creator = read("src/routes/creator.tsx");
 const sessionBootstrap = read("src/lib/session-bootstrap.functions.ts");
+const authz = read("src/lib/authz.server.ts");
 
 test("only an empty bootstrap self-map can be reassigned", () => {
   assert.match(migration, /v_existing_canonical <> p_authenticated_user_id/);
@@ -39,16 +40,34 @@ test("conversation, message and notification ownership each block reassignment",
   assert.match(migration, /conversation\.buyer_id/);
 });
 
-test("all remaining direct SocialBid account state blocks reassignment", () => {
-  assert.match(migration, /from public\.user_roles r\s+where r\.user_id = p_authenticated_user_id/);
+test("active capabilities and sessions block reassignment", () => {
   assert.match(migration, /from public\.social_bid_buyer_recovery_requests r/);
-  assert.match(migration, /r\.previous_user_id = p_authenticated_user_id/);
+  assert.match(migration, /r\.consumed_at is null/);
+  assert.match(migration, /r\.expires_at > now\(\)/);
   assert.match(migration, /from public\.social_bid_email_identity_links e/);
-  assert.match(migration, /from public\.social_bid_guest_buyer_claims g/);
-  assert.match(migration, /g\.claimed_by_user_id = p_authenticated_user_id/);
+  assert.match(migration, /e\.used_at is null/);
   assert.match(migration, /from public\.social_bid_user_sessions s/);
   assert.match(migration, /s\.revoked_at is null/);
   assert.match(migration, /s\.expires_at > now\(\)/);
+});
+
+test("completed recovery history is preserved and does not masquerade as ownership", () => {
+  assert.doesNotMatch(migration, /r\.previous_user_id = p_authenticated_user_id/);
+  assert.doesNotMatch(migration, /delete from public\.social_bid_buyer_recovery_requests/);
+  assert.doesNotMatch(migration, /update public\.social_bid_buyer_recovery_requests/);
+  assert.doesNotMatch(migration, /delete from public\.social_bid_guest_buyer_claims/);
+});
+
+test("legacy roles are atomically canonicalized and admin checks use the canonical account", () => {
+  assert.match(migration, /insert into public\.user_roles \(user_id, role\)/);
+  assert.match(migration, /select v_intent\.canonical_user_id, role/);
+  assert.match(migration, /on conflict \(user_id, role\) do nothing/);
+  assert.match(
+    migration,
+    /delete from public\.user_roles\s+where user_id = p_authenticated_user_id/,
+  );
+  assert.match(authz, /resolve_social_bid_account/);
+  assert.match(authz, /\.eq\("user_id", roleUserId\)/);
 });
 
 test("another Auth user mapped to the bootstrap canonical account blocks reassignment", () => {

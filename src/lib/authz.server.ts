@@ -12,12 +12,19 @@ export async function requireUser(token: string): Promise<Gate> {
 export async function requireAdmin(token: string): Promise<Gate> {
   const user = await requireUser(token);
   if (!user.ok) return user;
-  const { data } = await admin()
+  const db = admin();
+  const { data: canonicalUserId, error: mappingError } = await db.rpc(
+    "resolve_social_bid_account",
+    { p_auth_user_id: user.userId },
+  );
+  if (mappingError) return { ok: false, error: "Admins only." };
+  const roleUserId = canonicalUserId ? String(canonicalUserId) : user.userId;
+  const { data } = await db
     .from("user_roles")
     .select("role")
-    .eq("user_id", user.userId)
+    .eq("user_id", roleUserId)
     .eq("role", "admin")
     .maybeSingle();
   if (!data) return { ok: false, error: "Admins only." };
-  return user;
+  return { ...user, userId: roleUserId };
 }
