@@ -115,7 +115,7 @@ test("email auth establishes the existing server-readable Social Bid session bef
   assert.match(authRoute, /establishCanonicalSession/);
   assert.match(authRoute, /data: \{ accessToken \}/);
   assert.match(authRoute, /finish\(data\.session\.access_token\)/);
-  assert.match(authRoute, /window\.location\.assign\(next\)/);
+  assert.match(authRoute, /googleLinkMode \? "\/creator\?google_link=success" : next/);
   assert.match(sessionBootstrap, /db\.auth\.getUser\(data\.accessToken\)/);
   assert.match(sessionBootstrap, /resolveSocialBidAccountId\(db, user\.id/);
   assert.match(sessionBootstrap, /issueCreatorSession\(db, canonicalUserId\)/);

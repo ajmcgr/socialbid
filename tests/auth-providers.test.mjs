@@ -29,7 +29,7 @@ test("all successful providers establish the same canonical first-party session"
   assert.match(auth, /async function finish\(accessToken: string\)/);
   assert.match(auth, /establishCanonicalSession/);
   assert.match(auth, /onAuthStateChange/);
-  assert.match(auth, /window\.location\.assign\(next\)/);
+  assert.match(auth, /googleLinkMode \? "\/creator\?google_link=success" : next/);
   assert.match(inboxShell, /Use X, Google, or email to open the same Inbox/);
 });
 
