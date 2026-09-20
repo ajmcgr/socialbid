@@ -26,13 +26,21 @@ function form(params: Record<string, string | number | undefined>): string {
   return body.toString();
 }
 
-async function stripe(path: string, body?: string, method = "POST") {
+async function stripe(
+  path: string,
+  body?: string,
+  method = "POST",
+  options?: { idempotencyKey?: string; stripeAccount?: string },
+) {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${process.env["STRIPE_SECRET_KEY"]!}`,
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
+  if (options?.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
+  if (options?.stripeAccount) headers["Stripe-Account"] = options.stripeAccount;
   const res = await fetch(`${STRIPE_API}${path}`, {
     method,
-    headers: {
-      Authorization: `Bearer ${process.env["STRIPE_SECRET_KEY"]!}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
+    headers,
     body: body ?? null,
   });
   const json = (await res.json()) as Record<string, unknown>;
@@ -147,18 +155,39 @@ export async function verifyStripeSignature(payload: string, header: string | nu
 
 /* ------------------------------------------------------------------ Connect */
 
+/** Returns the countries Stripe currently exposes through Country Specs. */
+export async function listConnectCountries() {
+  return stripe("/country_specs?limit=100", undefined, "GET");
+}
+
+/** Validates one country against Stripe's authoritative Country Specs API. */
+export async function retrieveCountrySpec(country: string) {
+  return stripe(`/country_specs/${encodeURIComponent(country)}`, undefined, "GET");
+}
+
 /** Creates an Express connected account for a creator payout destination. */
-export async function createConnectAccount(opts: { email?: string | null; username: string }) {
+export async function createConnectAccount(opts: {
+  country: string;
+  creatorId: string;
+  email?: string | null;
+  generation: number;
+  username: string;
+}) {
   return stripe(
     "/accounts",
     form({
       type: "express",
+      country: opts.country,
       "capabilities[transfers][requested]": "true",
       "business_profile[name]": `SocialBid — ${opts.username}`,
       "business_profile[product_description]": "Sponsored placement on a SocialBid creator profile",
+      "metadata[socialbid_creator_id]": opts.creatorId,
+      "metadata[socialbid_username]": opts.username,
       "metadata[buymybio_username]": opts.username,
       ...(opts.email ? { email: opts.email } : {}),
     }),
+    "POST",
+    { idempotencyKey: `socialbid-connect-${opts.creatorId}-${opts.generation}` },
   );
 }
 
@@ -177,6 +206,21 @@ export async function createAccountLink(accountId: string, base: string) {
 
 export async function retrieveAccount(accountId: string) {
   return stripe(`/accounts/${accountId}`, undefined, "GET");
+}
+
+/** Deletes an unused Express account after the reset safety checks pass. */
+export async function deleteConnectAccount(accountId: string) {
+  return stripe(`/accounts/${accountId}`, undefined, "DELETE");
+}
+
+/** Reads the connected account balance without exposing any bank details. */
+export async function retrieveConnectBalance(accountId: string) {
+  return stripe("/balance", undefined, "GET", { stripeAccount: accountId });
+}
+
+/** Reads at most one connected-account payout for reset eligibility. */
+export async function listConnectPayouts(accountId: string) {
+  return stripe("/payouts?limit=1", undefined, "GET", { stripeAccount: accountId });
 }
 
 /** Express dashboard link so a creator can see their own payouts. */

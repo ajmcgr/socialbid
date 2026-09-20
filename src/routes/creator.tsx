@@ -2,6 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Share2 } from "lucide-react";
 import { CreatorShareCard } from "@/components/CreatorShareCard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,7 +32,9 @@ import {
 import { getSupabase } from "@/integrations/supabase/browser";
 import {
   getPayoutStatus,
+  getPayoutCountries,
   startPayoutOnboarding,
+  resetPayoutAccount,
   refreshPayoutAccount,
   payoutDashboardLink,
   type PayoutStatus,
@@ -765,12 +778,43 @@ function payoutLabel(status: string): string {
 
 function PayoutsPanel({ status, onChange }: { status: PayoutStatus | null; onChange: () => void }) {
   const [busy, setBusy] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [countries, setCountries] = useState<string[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [loadingCountries, setLoadingCountries] = useState(false);
+
+  useEffect(() => {
+    if (status?.connected !== false) return;
+    let active = true;
+    setLoadingCountries(true);
+    void getPayoutCountries({ data: {} })
+      .then((result) => {
+        if (!active) return;
+        if ("countries" in result) setCountries(result.countries);
+        else setError(result.error);
+      })
+      .catch(() => {
+        if (active) setError("We couldn't load Stripe's supported countries. Please try again.");
+      })
+      .finally(() => {
+        if (active) setLoadingCountries(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [status?.connected]);
 
   async function onConnect() {
+    if (status && !status.connected && !selectedCountry) {
+      setError("Choose where you're based before continuing.");
+      return;
+    }
     setBusy(true);
     setError(null);
-    const res = await startPayoutOnboarding({ data: {} });
+    const res = await startPayoutOnboarding({
+      data: { country: status?.connected ? undefined : selectedCountry },
+    });
     if ("error" in res) {
       setError(res.error);
       setBusy(false);
@@ -787,13 +831,33 @@ function PayoutsPanel({ status, onChange }: { status: PayoutStatus | null; onCha
     else setError(res.error);
   }
 
+  async function onReset() {
+    setResetting(true);
+    setError(null);
+    const result = await resetPayoutAccount({ data: { confirmation: "START_OVER" } });
+    setResetting(false);
+    if ("error" in result) {
+      setError(result.error);
+      return;
+    }
+    setSelectedCountry("");
+    setCountries([]);
+    onChange();
+  }
+
+  const countryName = (code: string) =>
+    new Intl.DisplayNames(["en"], { type: "region" }).of(code) ?? code;
+
   return (
     <div className="panel mt-8 p-6">
       <div className="label-xs">Step 3</div>
-      <h2 className="mt-1 text-xl font-extrabold">Get paid</h2>
+      <h2 className="mt-1 text-xl font-extrabold">
+        {status && !status.connected ? "Set up payouts" : "Get paid"}
+      </h2>
       <p className="mt-2 text-sm text-muted-foreground">
-        Buyers pay SocialBid. We hold your share for 7 days, then transfer it to your bank via
-        Stripe.
+        {status && !status.connected
+          ? "Connect with Stripe to receive your sponsorship earnings."
+          : "Buyers pay SocialBid. We hold your share for 7 days, then transfer it to your bank via Stripe."}
       </p>
 
       {status ? (
@@ -802,6 +866,37 @@ function PayoutsPanel({ status, onChange }: { status: PayoutStatus | null; onCha
             <Badge on={status.connected} label="Payout account created" />
             <Badge on={status.payoutsEnabled} label="Payouts enabled" />
           </div>
+
+          {!status.connected ? (
+            <div className="mt-5 max-w-md space-y-2">
+              <label htmlFor="stripe-country" className="block text-sm font-bold text-foreground">
+                Where are you based?
+              </label>
+              <select
+                id="stripe-country"
+                value={selectedCountry}
+                onChange={(event) => setSelectedCountry(event.target.value)}
+                disabled={loadingCountries || countries.length === 0}
+                className="h-11 w-full border-2 border-border bg-background px-3 text-sm text-foreground disabled:opacity-50"
+              >
+                <option value="">
+                  {loadingCountries ? "Loading countries…" : "Choose a country"}
+                </option>
+                {countries.map((country) => (
+                  <option key={country} value={country}>
+                    {countryName(country)}
+                  </option>
+                ))}
+              </select>
+              <p className="text-sm text-muted-foreground">
+                Stripe uses this to set up your payout account.
+              </p>
+            </div>
+          ) : status.accountCountry ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Stripe account country: {countryName(status.accountCountry)}.
+            </p>
+          ) : null}
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="border-2 border-border px-4 py-3">
@@ -849,7 +944,9 @@ function PayoutsPanel({ status, onChange }: { status: PayoutStatus | null; onCha
           <div className="mt-6 flex flex-wrap gap-3">
             <button
               onClick={onConnect}
-              disabled={busy || !status.configured}
+              disabled={
+                busy || resetting || !status.configured || (!status.connected && !selectedCountry)
+              }
               className="btn-ink btn-ink-hover disabled:opacity-50"
             >
               {busy
@@ -858,7 +955,7 @@ function PayoutsPanel({ status, onChange }: { status: PayoutStatus | null; onCha
                   ? "Update payout details"
                   : status.connected
                     ? "Finish payout setup"
-                    : "Set up payouts"}
+                    : "Continue with Stripe"}
             </button>
             {status.connected ? (
               <button onClick={onDashboard} disabled={busy} className="btn-outline-ink">
@@ -868,7 +965,43 @@ function PayoutsPanel({ status, onChange }: { status: PayoutStatus | null; onCha
             <button onClick={onChange} className="btn-outline-ink">
               Refresh
             </button>
+            {status.connected && !status.payoutsEnabled && status.reset?.eligible ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button disabled={busy || resetting} className="btn-outline-ink">
+                    Start over with Stripe
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Start over with Stripe?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This removes only an unused, incomplete payout account so you can choose the
+                      correct country. Existing sponsorship and payout records are preserved.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={resetting}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      disabled={resetting}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        void onReset();
+                      }}
+                    >
+                      {resetting ? "Starting over…" : "Start over"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : null}
           </div>
+          {status.connected && !status.payoutsEnabled && status.reset?.contactSupport ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              This payout account has financial history and can't be safely restarted. Contact
+              SocialBid support if its country is incorrect.
+            </p>
+          ) : null}
         </>
       ) : (
         <p className="mt-5 text-sm text-muted-foreground">Loading payouts…</p>

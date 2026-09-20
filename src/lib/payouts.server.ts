@@ -175,12 +175,13 @@ export async function releaseOne(payoutId: string): Promise<string> {
   const { data: creator } = await db
     .from("creators")
     .select(
-      "id, username, banned, x_user_id, x_bio_verified, stripe_account_id, stripe_payouts_enabled",
+      "id, username, banned, x_user_id, x_bio_verified, stripe_account_id, stripe_payouts_enabled, stripe_reset_in_progress",
     )
     .eq("id", payout.creator_id)
     .maybeSingle();
   if (!creator) return block(payoutId, "creator_missing");
   if (creator.banned) return block(payoutId, "creator_banned");
+  if (creator.stripe_reset_in_progress) return block(payoutId, "payout_setup_changing");
   if (!creator.stripe_account_id) return block(payoutId, "no_connected_account");
 
   // Re-check the connected account rather than trusting the cached flag.
