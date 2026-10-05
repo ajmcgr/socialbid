@@ -140,25 +140,6 @@ function Auth() {
     };
   }, [googleLinkMode, linkToken, next, tokenHash, type]);
 
-  async function continueWithGoogle() {
-    const supabase = getSupabase();
-    if (!supabase) {
-      setMessage("Sign in is temporarily unavailable. Please try again.");
-      return;
-    }
-    setBusy(true);
-    setMessage(null);
-    const redirect = new URL("/auth", window.location.origin);
-    redirect.searchParams.set("next", next);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: redirect.toString() },
-    });
-    if (error) {
-      setBusy(false);
-      setMessage("Google sign-in couldn't start. Please try again.");
-    }
-  }
 
   async function sendEmailLink() {
     setBusy(true);
@@ -196,20 +177,13 @@ function Auth() {
     <div className="mx-auto max-w-md px-5 py-20">
       <h1 className="text-3xl font-extrabold">Sign in to SocialBid</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Use X, Google, or a secure email link. Add extra sign-in methods later from My Profile.
+        Use X or a secure email link. Add extra sign-in methods later from My Profile.
       </p>
       <div className="panel mt-6 space-y-3 px-5 py-6">
         <a href={xHref} className="btn-ink btn-ink-hover flex w-full justify-center">
           Continue with X
         </a>
-        <button
-          type="button"
-          onClick={continueWithGoogle}
-          disabled={busy}
-          className="btn-outline-ink w-full justify-center disabled:opacity-40"
-        >
-          Continue with Google
-        </button>
+
         <div className="flex items-center gap-3 py-2" aria-hidden="true">
           <span className="h-px flex-1 bg-border" />
           <span className="font-mono text-xs text-muted-foreground">OR</span>
