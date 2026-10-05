@@ -41,11 +41,7 @@ import {
 } from "@/lib/payouts.functions";
 import { trackEvent } from "@/lib/listing.functions";
 import { money } from "@/lib/format";
-import {
-  getSignInMethods,
-  prepareGoogleIdentityLink,
-  requestSignInEmailLink,
-} from "@/lib/account-linking.functions";
+import { getSignInMethods, requestSignInEmailLink } from "@/lib/account-linking.functions";
 
 type SignInMethods = Awaited<ReturnType<typeof getSignInMethods>>;
 
@@ -94,7 +90,6 @@ function CreatorPage() {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [signInMethods, setSignInMethods] = useState<SignInMethods>(null);
   const [signInEmail, setSignInEmail] = useState("");
-  const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [linkingEmail, setLinkingEmail] = useState(false);
   const [linkMessage, setLinkMessage] = useState<string | null>(null);
   const enterMarketSeen = useRef(false);
@@ -135,7 +130,6 @@ function CreatorPage() {
     }
     const stripeReturn = params.get("stripe");
     const emailLink = params.get("email_link");
-    const googleLink = params.get("google_link");
     const linkError = params.get("link_error");
     if (emailLink === "success") setLinkMessage("Email sign-in is now connected.");
     if (emailLink === "conflict")
@@ -144,12 +138,7 @@ function CreatorPage() {
       setLinkMessage("Sign in again before confirming a new sign-in email.");
     if (emailLink === "invalid" || emailLink === "failed")
       setLinkMessage("That email-linking request is invalid or has expired.");
-    if (googleLink === "success") setMessage("Google — Connected");
-    if (linkError === "google_conflict")
-      setMessage("That Google account belongs to another established SocialBid account.");
-    if (linkError === "google_failed")
-      setMessage("Google couldn't be connected. Please try again.");
-    if (connected || stripeReturn || emailLink || googleLink) {
+    if (connected || stripeReturn || emailLink) {
       window.history.replaceState({}, "", "/creator");
     }
     loadCreatorSession();
@@ -250,44 +239,6 @@ function CreatorPage() {
     setAuthenticated(false);
     setBusy(false);
     window.dispatchEvent(new Event("creator-session-changed"));
-  }
-
-  async function onLinkGoogle() {
-    const supabase = getSupabase();
-    if (!supabase) {
-      setLinkMessage("Google linking is temporarily unavailable.");
-      return;
-    }
-    setLinkingGoogle(true);
-    setLinkMessage(null);
-    const prepared = await prepareGoogleIdentityLink({ data: {} }).catch(() => ({
-      error: "We couldn't start Google linking. Please try again.",
-    }));
-    if ("error" in prepared) {
-      setLinkingGoogle(false);
-      setLinkMessage(prepared.error);
-      return;
-    }
-    if ("alreadyLinked" in prepared) {
-      setSignInMethods((current) => (current ? { ...current, google: true } : current));
-      setLinkingGoogle(false);
-      return;
-    }
-    const redirect = new URL("/auth", window.location.origin);
-    redirect.searchParams.set("next", "/creator");
-    redirect.searchParams.set("link_token", prepared.linkToken);
-    const linked = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: redirect.toString() },
-    });
-    if (linked.error) {
-      setLinkingGoogle(false);
-      setLinkMessage(
-        /already|exists|linked/i.test(linked.error.message)
-          ? "That Google account is already linked to another account."
-          : "We couldn't connect Google. Please try again.",
-      );
-    }
   }
 
   async function onLinkEmail(event: React.FormEvent<HTMLFormElement>) {
@@ -506,26 +457,6 @@ function CreatorPage() {
                 <span className="font-mono text-xs font-bold">
                   {signInMethods?.x ? "CONNECTED" : "—"}
                 </span>
-              </div>
-              <div className="flex items-center justify-between gap-4 border-2 border-border px-4 py-3">
-                <div>
-                  <div className="font-semibold">Google</div>
-                  <div className="text-xs text-muted-foreground">
-                    {signInMethods?.google ? "Connected" : "Not connected"}
-                  </div>
-                </div>
-                {signInMethods?.google ? (
-                  <span className="font-mono text-xs font-bold">CONNECTED</span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={onLinkGoogle}
-                    disabled={linkingGoogle}
-                    className="btn-outline-ink disabled:opacity-50"
-                  >
-                    {linkingGoogle ? "Connecting…" : "Connect Google"}
-                  </button>
-                )}
               </div>
               <form onSubmit={onLinkEmail} className="border-2 border-border px-4 py-3">
                 <div className="font-semibold">Email</div>

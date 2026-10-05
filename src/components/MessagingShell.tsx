@@ -6,9 +6,7 @@ export function MessagingSignIn() {
     <div className="panel mt-8 px-5 py-6">
       <h2 className="text-lg font-extrabold">Sign in to SocialBid</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Use X or email to open the same Inbox for creators you sponsor and sponsors who
-        back you.
-
+        Use X or email to open the same Inbox for creators you sponsor and sponsors who back you.
       </p>
       <Link to="/auth" search={{ next: "/inbox" }} className="btn-ink btn-ink-hover mt-4">
         Sign in

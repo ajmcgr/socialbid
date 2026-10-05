@@ -122,12 +122,11 @@ test("the migration is SocialBid-only and leaves Post-owned tables untouched", (
   assert.match(migration, /grant execute[\s\S]*service_role/);
 });
 
-test("Google callbacks use a dedicated processing and visible outcome UI", () => {
+test("Google callbacks keep a dedicated processing and visible outcome UI", () => {
   assert.match(auth, /const googleLinkMode = Boolean\(linkToken && type !== "magiclink"\)/);
   assert.match(auth, /Connecting Google…/);
   assert.match(auth, /googleLinkMode \? "\/creator\?google_link=success" : next/);
   assert.match(auth, /link_error/);
-  assert.match(creator, /Google — Connected/);
-  assert.match(creator, /Google couldn't be connected\. Please try again\./);
+  assert.doesNotMatch(creator, /Google — Connected|google_link/);
   assert.doesNotMatch(auth, /auth\.linkIdentity/);
 });
