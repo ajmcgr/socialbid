@@ -41,10 +41,7 @@ import {
 } from "@/lib/payouts.functions";
 import { trackEvent } from "@/lib/listing.functions";
 import { money } from "@/lib/format";
-import {
-  getSignInMethods,
-  requestSignInEmailLink,
-} from "@/lib/account-linking.functions";
+import { getSignInMethods, requestSignInEmailLink } from "@/lib/account-linking.functions";
 
 type SignInMethods = Awaited<ReturnType<typeof getSignInMethods>>;
 

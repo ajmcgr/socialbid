@@ -140,7 +140,6 @@ function Auth() {
     };
   }, [googleLinkMode, linkToken, next, tokenHash, type]);
 
-
   async function sendEmailLink() {
     setBusy(true);
     setMessage(null);
