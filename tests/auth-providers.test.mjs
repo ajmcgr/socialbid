@@ -70,6 +70,11 @@ test("explicit Google linking proves both sides without moving an Auth identity"
   assert.match(accountLinking, /resolveCreatorSession/);
   assert.match(accountLinking, /social_bid_account_link_intents/);
   assert.match(accountLinking, /complete_social_bid_account_link/);
+  assert.match(auth, /completeCanonicalAccountLink/);
+  assert.match(auth, /google_link/);
+  assert.match(auth, /reportCanonicalLinkCallbackFailure/);
+  assert.match(auth, /window\.location\.hash/);
+  assert.match(auth, /window\.location\.assign\(linkFailureDestination/);
   assert.doesNotMatch(accountLinking, /display_name|company_name|social_handle/);
 });
 
