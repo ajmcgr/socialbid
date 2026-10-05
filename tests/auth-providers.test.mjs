@@ -70,16 +70,6 @@ test("explicit Google linking proves both sides without moving an Auth identity"
   assert.match(accountLinking, /resolveCreatorSession/);
   assert.match(accountLinking, /social_bid_account_link_intents/);
   assert.match(accountLinking, /complete_social_bid_account_link/);
-  assert.match(creator, /link_token/);
-  assert.match(creator, /signInWithOAuth/);
-  assert.doesNotMatch(creator, /auth\.linkIdentity/);
-  assert.match(creator, /new URL\("\/auth", window\.location\.origin\)/);
-  assert.match(creator, /redirect\.searchParams\.set\("next", "\/creator"\)/);
-  assert.match(auth, /completeCanonicalAccountLink/);
-  assert.match(auth, /google_link/);
-  assert.match(auth, /reportCanonicalLinkCallbackFailure/);
-  assert.match(auth, /window\.location\.hash/);
-  assert.match(auth, /window\.location\.assign\(linkFailureDestination/);
   assert.doesNotMatch(accountLinking, /display_name|company_name|social_handle/);
 });
 
@@ -113,12 +103,13 @@ test("link intents are provider-bound, session-bound, expiring and single-use", 
   assert.match(accountLinking, /issueCreatorSession\(db, session\.userId\)/);
 });
 
-test("Google sign-in is removed and stays separate from explicit Connect Google", () => {
+test("Google sign-in and Connect Google are both removed from the product", () => {
   assert.doesNotMatch(auth, /continueWithGoogle/);
   assert.match(auth, /linkToken\s*\?/);
   assert.match(auth, /establishCanonicalSession/);
   assert.doesNotMatch(auth, /prepareGoogleIdentityLink/);
-  assert.match(creator, /prepareGoogleIdentityLink/);
+  assert.doesNotMatch(creator, /prepareGoogleIdentityLink/);
+  assert.doesNotMatch(creator, /Connect Google|onLinkGoogle|signInWithOAuth/);
 });
 
 test("a provider already mapped to any other SocialBid account is rejected", () => {
