@@ -17,9 +17,9 @@ const canonicalMigration = read("db/0033_social_bid_canonical_account_resolution
 const sessionBootstrap = read("src/lib/session-bootstrap.functions.ts");
 const creator = read("src/routes/creator.tsx");
 
-test("generic sign-in offers only X, Google and passwordless email", () => {
+test("generic sign-in offers only X and passwordless email", () => {
   assert.match(auth, /Continue with X/);
-  assert.match(auth, /provider: "google"/);
+  assert.doesNotMatch(auth, /Continue with Google|continueWithGoogle/);
   assert.match(auth, /Email me a sign-in link/);
   assert.match(auth, /verifyOtp/);
   assert.doesNotMatch(auth, /type="password"|signInWithPassword|auth\.signUp/);
@@ -30,7 +30,7 @@ test("all successful providers establish the same canonical first-party session"
   assert.match(auth, /establishCanonicalSession/);
   assert.match(auth, /onAuthStateChange/);
   assert.match(auth, /googleLinkMode \? "\/creator\?google_link=success" : next/);
-  assert.match(inboxShell, /Use X, Google, or email to open the same Inbox/);
+  assert.match(inboxShell, /Use X or email to open the same Inbox/);
 });
 
 test("redirect destinations are allowlisted rather than client-arbitrary", () => {
@@ -113,8 +113,8 @@ test("link intents are provider-bound, session-bound, expiring and single-use", 
   assert.match(accountLinking, /issueCreatorSession\(db, session\.userId\)/);
 });
 
-test("normal Google login remains separate from explicit Connect Google", () => {
-  assert.match(auth, /continueWithGoogle/);
+test("Google sign-in is removed and stays separate from explicit Connect Google", () => {
+  assert.doesNotMatch(auth, /continueWithGoogle/);
   assert.match(auth, /linkToken\s*\?/);
   assert.match(auth, /establishCanonicalSession/);
   assert.doesNotMatch(auth, /prepareGoogleIdentityLink/);
